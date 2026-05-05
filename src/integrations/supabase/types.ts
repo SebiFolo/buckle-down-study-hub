@@ -14,7 +14,265 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      documents: {
+        Row: {
+          created_at: string
+          file_type: string
+          file_url: string | null
+          id: string
+          raw_text: string | null
+          summary: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_type: string
+          file_url?: string | null
+          id?: string
+          raw_text?: string | null
+          summary?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_type?: string
+          file_url?: string | null
+          id?: string
+          raw_text?: string | null
+          summary?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      flashcard_sets: {
+        Row: {
+          created_at: string
+          document_id: string | null
+          id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_id?: string | null
+          id?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          document_id?: string | null
+          id?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcard_sets_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flashcards: {
+        Row: {
+          back_text: string
+          front_text: string
+          id: string
+          position: number
+          set_id: string
+        }
+        Insert: {
+          back_text: string
+          front_text: string
+          id?: string
+          position?: number
+          set_id: string
+        }
+        Update: {
+          back_text?: string
+          front_text?: string
+          id?: string
+          position?: number
+          set_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcards_set_id_fkey"
+            columns: ["set_id"]
+            isOneToOne: false
+            referencedRelation: "flashcard_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          last_active_date: string | null
+          level: number
+          longest_streak: number
+          streak_count: number
+          username: string
+          xp: number
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id: string
+          last_active_date?: string | null
+          level?: number
+          longest_streak?: number
+          streak_count?: number
+          username: string
+          xp?: number
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          last_active_date?: string | null
+          level?: number
+          longest_streak?: number
+          streak_count?: number
+          username?: string
+          xp?: number
+        }
+        Relationships: []
+      }
+      quiz_attempts: {
+        Row: {
+          completed_at: string
+          id: string
+          quiz_id: string
+          score: number
+          total: number
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          id?: string
+          quiz_id: string
+          score: number
+          total: number
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          id?: string
+          quiz_id?: string
+          score?: number
+          total?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_attempts_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_questions: {
+        Row: {
+          correct_answer: string
+          id: string
+          options: Json
+          position: number
+          question_text: string
+          quiz_id: string
+        }
+        Insert: {
+          correct_answer: string
+          id?: string
+          options: Json
+          position?: number
+          question_text: string
+          quiz_id: string
+        }
+        Update: {
+          correct_answer?: string
+          id?: string
+          options?: Json
+          position?: number
+          question_text?: string
+          quiz_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_questions_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quizzes: {
+        Row: {
+          created_at: string
+          document_id: string | null
+          id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_id?: string | null
+          id?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          document_id?: string | null
+          id?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quizzes_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      xp_events: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          reason: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
