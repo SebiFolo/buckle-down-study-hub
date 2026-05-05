@@ -42,7 +42,13 @@ function VaultPage() {
     setBusy(true);
     try {
       const buf = await file.arrayBuffer();
-      const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+      const bytes = new Uint8Array(buf);
+      let binary = "";
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)));
+      }
+      const b64 = btoa(binary);
       toast.info("🦌 Buckle is reading your notes...");
       const { data: ex, error: exErr } = await supabase.functions.invoke("extract-text", {
         body: { fileBase64: b64, fileType: ext, fileName: file.name },
