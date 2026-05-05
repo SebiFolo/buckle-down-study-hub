@@ -1,0 +1,13 @@
+project_id = "fpeixuaghvhaclhtonvo"
+
+[functions.generate-summary]
+verify_jwt = true
+
+[functions.generate-study]
+verify_jwt = true
+
+[functions.award-xp]
+verify_jwt = true
+
+[functions.extract-text]
+verify_jwt = true

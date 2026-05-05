@@ -1,0 +1,95 @@
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { LayoutDashboard, FolderOpen, BookOpen, User, LogOut } from "lucide-react";
+import { BuckLogo } from "./BuckLogo";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import type { ReactNode } from "react";
+
+const NAV = [
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/vault", label: "Vault", icon: FolderOpen },
+  { to: "/study", label: "Study", icon: BookOpen },
+  { to: "/profile", label: "Profile", icon: User },
+] as const;
+
+export function AppShell({ children }: { children: ReactNode }) {
+  const loc = useLocation();
+  const nav = useNavigate();
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    toast.success("Signed out");
+    nav({ to: "/login" });
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col md:flex-row">
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex w-60 flex-col bg-sidebar border-r border-sidebar-border p-4 gap-1">
+        <Link to="/dashboard" className="flex items-center gap-2 px-2 py-3 text-primary">
+          <BuckLogo className="h-8 w-8" />
+          <span className="font-bold text-lg tracking-tight">Buckle Down</span>
+        </Link>
+        <nav className="flex flex-col gap-1 mt-2">
+          {NAV.map((n) => {
+            const Icon = n.icon;
+            const active = loc.pathname.startsWith(n.to);
+            return (
+              <Link
+                key={n.to}
+                to={n.to}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                  active
+                    ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {n.label}
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="mt-auto">
+          <Button variant="ghost" size="sm" className="w-full justify-start" onClick={signOut}>
+            <LogOut className="h-4 w-4 mr-2" /> Sign out
+          </Button>
+        </div>
+      </aside>
+
+      {/* Mobile top bar */}
+      <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-sidebar">
+        <Link to="/dashboard" className="flex items-center gap-2 text-primary">
+          <BuckLogo className="h-7 w-7" />
+          <span className="font-bold">Buckle Down</span>
+        </Link>
+        <Button variant="ghost" size="sm" onClick={signOut}>
+          <LogOut className="h-4 w-4" />
+        </Button>
+      </header>
+
+      <main className="flex-1 pb-20 md:pb-6">{children}</main>
+
+      {/* Mobile bottom tab */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-sidebar border-t border-sidebar-border flex justify-around z-40">
+        {NAV.map((n) => {
+          const Icon = n.icon;
+          const active = loc.pathname.startsWith(n.to);
+          return (
+            <Link
+              key={n.to}
+              to={n.to}
+              className={`flex-1 flex flex-col items-center gap-1 py-2 text-xs ${
+                active ? "text-primary" : "text-muted-foreground"
+              }`}
+            >
+              <Icon className="h-5 w-5" />
+              {n.label}
+            </Link>
+          );
+        })}
+      </nav>
+    </div>
+  );
+}
