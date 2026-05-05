@@ -43,19 +43,10 @@ serve(async (req) => {
     const ft = String(fileType || "").toLowerCase();
 
     if (ft === "pdf") {
-      // Lightweight PDF text extraction via pdfjs-dist
-      const pdfjs = await import("https://esm.sh/pdfjs-dist@4.0.379/build/pdf.mjs");
-      // disable worker
-      // @ts-ignore
-      pdfjs.GlobalWorkerOptions.workerSrc = "";
-      const doc = await pdfjs.getDocument({ data: bytes, useWorker: false, isEvalSupported: false, disableFontFace: true }).promise;
-      const parts: string[] = [];
-      for (let i = 1; i <= doc.numPages && i <= 60; i++) {
-        const page = await doc.getPage(i);
-        const content = await page.getTextContent();
-        parts.push(content.items.map((it: any) => it.str).join(" "));
-      }
-      text = parts.join("\n\n");
+      // Deno-compatible PDF text extraction via unpdf
+      const { extractText } = await import("https://esm.sh/unpdf@0.12.1");
+      const { text: extracted } = await extractText(bytes, { mergePages: true });
+      text = Array.isArray(extracted) ? extracted.join("\n\n") : extracted;
     } else if (ft === "docx") {
       const mammoth = await import("https://esm.sh/mammoth@1.7.0?bundle");
       const result = await mammoth.extractRawText({ arrayBuffer: bytes.buffer });
