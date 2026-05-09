@@ -1,13 +1,18 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 
-const cors = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const IDENTIFIER_RE = /^[a-zA-Z0-9._@+-]{1,255}$/;
+const ALLOWED_ACTIONS = new Set([
+  "find", "request", "accept", "reject", "list",
+  "incoming", "outgoing", "unfriend", "cancel", "share",
+  "shared_received", "shared_sent",
+]);
 
 function thresholdForLevel(level: number): number {
   if (level <= 1) return 0;
@@ -21,9 +26,6 @@ function levelFromXp(xp: number): number {
   return lvl;
 }
 
-const json = (b: unknown, status = 200) =>
-  new Response(JSON.stringify(b), { status, headers: { ...cors, "Content-Type": "application/json" } });
-
 async function awardXp(admin: any, userId: string, amount: number, reason: string) {
   const { data: p } = await admin.from("profiles").select("xp, level").eq("id", userId).single();
   if (!p) return;
@@ -34,22 +36,30 @@ async function awardXp(admin: any, userId: string, amount: number, reason: strin
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: cors });
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders(req) });
   try {
     const auth = req.headers.get("Authorization");
-    if (!auth) return json({ error: "Unauthorized" }, 401);
+    if (!auth) return jsonResponse(req, { error: "Unauthorized" }, 401);
     const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { global: { headers: { Authorization: auth } } });
     const { data: u } = await userClient.auth.getUser();
-    if (!u?.user) return json({ error: "Unauthorized" }, 401);
+    if (!u?.user) return jsonResponse(req, { error: "Unauthorized" }, 401);
     const userId = u.user.id;
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const body = await req.json();
-    const action = body.action as string;
+    const body = await req.json().catch(() => ({}));
+    const action = String(body.action || "");
+    if (!ALLOWED_ACTIONS.has(action)) return jsonResponse(req, { error: "Invalid action" }, 400);
+
+    // Common validators
+    const getUuid = (v: unknown): string | null => {
+      const s = String(v || "");
+      return UUID_RE.test(s) ? s : null;
+    };
 
     if (action === "find") {
       const identifier = String(body.identifier || "").trim();
-      if (!identifier) return json({ error: "Missing identifier" }, 400);
+      if (!identifier || !IDENTIFIER_RE.test(identifier)) return jsonResponse(req, { error: "Invalid identifier" }, 400);
+
       let { data: prof } = await admin
         .from("profiles")
         .select("id, username, avatar_url, level, xp, streak_count")
@@ -69,8 +79,8 @@ serve(async (req) => {
         }
       }
 
-      if (!prof) return json({ error: "User not found" }, 404);
-      if (prof.id === userId) return json({ error: "You cannot add yourself" }, 400);
+      if (!prof) return jsonResponse(req, { error: "User not found" }, 404);
+      if (prof.id === userId) return jsonResponse(req, { error: "You cannot add yourself" }, 400);
 
       const { data: existing } = await admin
         .from("friends")
@@ -78,39 +88,44 @@ serve(async (req) => {
         .or(`and(requester_id.eq.${userId},addressee_id.eq.${prof.id}),and(requester_id.eq.${prof.id},addressee_id.eq.${userId})`)
         .maybeSingle();
 
-      return json({ user: prof, relationship: existing || null });
+      return jsonResponse(req, { user: prof, relationship: existing || null });
     }
 
     if (action === "request") {
-      const targetId = String(body.targetId || "");
-      if (!targetId || targetId === userId) return json({ error: "Invalid target" }, 400);
+      const targetId = getUuid(body.targetId);
+      if (!targetId || targetId === userId) return jsonResponse(req, { error: "Invalid target" }, 400);
       const { data: existing } = await admin
         .from("friends")
         .select("id, status")
         .or(`and(requester_id.eq.${userId},addressee_id.eq.${targetId}),and(requester_id.eq.${targetId},addressee_id.eq.${userId})`)
         .maybeSingle();
-      if (existing) return json({ error: existing.status === "accepted" ? "Already friends" : "Request already exists" }, 400);
+      if (existing) return jsonResponse(req, { error: existing.status === "accepted" ? "Already friends" : "Request already exists" }, 400);
       const { error } = await admin.from("friends").insert({ requester_id: userId, addressee_id: targetId, status: "pending" });
-      if (error) return json({ error: error.message }, 500);
-      return json({ ok: true });
+      if (error) {
+        console.error("[friends-action] request insert error", error);
+        return jsonResponse(req, { error: "Could not send request" }, 500);
+      }
+      return jsonResponse(req, { ok: true });
     }
 
     if (action === "accept") {
-      const friendRowId = String(body.friendRowId || "");
+      const friendRowId = getUuid(body.friendRowId);
+      if (!friendRowId) return jsonResponse(req, { error: "Invalid id" }, 400);
       const { data: row } = await admin.from("friends").select("*").eq("id", friendRowId).maybeSingle();
-      if (!row || row.addressee_id !== userId || row.status !== "pending") return json({ error: "Invalid request" }, 400);
+      if (!row || row.addressee_id !== userId || row.status !== "pending") return jsonResponse(req, { error: "Invalid request" }, 400);
       await admin.from("friends").update({ status: "accepted", updated_at: new Date().toISOString() }).eq("id", friendRowId);
       await awardXp(admin, row.requester_id, 15, "friend_accept");
       await awardXp(admin, row.addressee_id, 15, "friend_accept");
-      return json({ ok: true });
+      return jsonResponse(req, { ok: true });
     }
 
     if (action === "reject") {
-      const friendRowId = String(body.friendRowId || "");
+      const friendRowId = getUuid(body.friendRowId);
+      if (!friendRowId) return jsonResponse(req, { error: "Invalid id" }, 400);
       const { data: row } = await admin.from("friends").select("*").eq("id", friendRowId).maybeSingle();
-      if (!row || row.addressee_id !== userId) return json({ error: "Invalid request" }, 400);
+      if (!row || row.addressee_id !== userId) return jsonResponse(req, { error: "Invalid request" }, 400);
       await admin.from("friends").delete().eq("id", friendRowId);
-      return json({ ok: true });
+      return jsonResponse(req, { ok: true });
     }
 
     if (action === "list") {
@@ -120,7 +135,7 @@ serve(async (req) => {
         .eq("status", "accepted")
         .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`);
       const ids = (rows || []).map((r: any) => (r.requester_id === userId ? r.addressee_id : r.requester_id));
-      if (!ids.length) return json({ friends: [] });
+      if (!ids.length) return jsonResponse(req, { friends: [] });
       const { data: profs } = await admin
         .from("profiles")
         .select("id, username, avatar_url, level, xp, streak_count, last_active_date")
@@ -130,7 +145,7 @@ serve(async (req) => {
         const otherId = r.requester_id === userId ? r.addressee_id : r.requester_id;
         return { friendRowId: r.id, ...byId.get(otherId) };
       }).filter((f: any) => f.id);
-      return json({ friends });
+      return jsonResponse(req, { friends });
     }
 
     if (action === "incoming") {
@@ -144,7 +159,7 @@ serve(async (req) => {
         ? await admin.from("profiles").select("id, username, avatar_url, level, streak_count").in("id", ids)
         : { data: [] };
       const byId = new Map((profs || []).map((p: any) => [p.id, p]));
-      return json({
+      return jsonResponse(req, {
         requests: (rows || []).map((r: any) => ({ friendRowId: r.id, created_at: r.created_at, ...byId.get(r.requester_id) })),
       });
     }
@@ -160,43 +175,50 @@ serve(async (req) => {
         ? await admin.from("profiles").select("id, username, avatar_url, level, streak_count").in("id", ids)
         : { data: [] };
       const byId = new Map((profs || []).map((p: any) => [p.id, p]));
-      return json({
+      return jsonResponse(req, {
         requests: (rows || []).map((r: any) => ({ friendRowId: r.id, created_at: r.created_at, ...byId.get(r.addressee_id) })),
       });
     }
 
     if (action === "unfriend") {
-      const otherId = String(body.targetId || "");
+      const otherId = getUuid(body.targetId);
+      if (!otherId) return jsonResponse(req, { error: "Invalid id" }, 400);
       await admin.from("friends").delete()
         .or(`and(requester_id.eq.${userId},addressee_id.eq.${otherId}),and(requester_id.eq.${otherId},addressee_id.eq.${userId})`);
       await admin.from("shared_documents").delete()
         .or(`and(shared_by_user_id.eq.${userId},shared_with_user_id.eq.${otherId}),and(shared_by_user_id.eq.${otherId},shared_with_user_id.eq.${userId})`);
-      return json({ ok: true });
+      return jsonResponse(req, { ok: true });
     }
 
     if (action === "cancel") {
-      const friendRowId = String(body.friendRowId || "");
+      const friendRowId = getUuid(body.friendRowId);
+      if (!friendRowId) return jsonResponse(req, { error: "Invalid id" }, 400);
       const { data: row } = await admin.from("friends").select("*").eq("id", friendRowId).maybeSingle();
-      if (!row || row.requester_id !== userId) return json({ error: "Invalid" }, 400);
+      if (!row || row.requester_id !== userId) return jsonResponse(req, { error: "Invalid" }, 400);
       await admin.from("friends").delete().eq("id", friendRowId);
-      return json({ ok: true });
+      return jsonResponse(req, { ok: true });
     }
 
     if (action === "share") {
-      const documentId = String(body.documentId || "");
-      const friendId = String(body.friendId || "");
+      const documentId = getUuid(body.documentId);
+      const friendId = getUuid(body.friendId);
+      if (!documentId || !friendId) return jsonResponse(req, { error: "Invalid ids" }, 400);
       const { data: doc } = await admin.from("documents").select("id, user_id, title").eq("id", documentId).maybeSingle();
-      if (!doc || doc.user_id !== userId) return json({ error: "Not your document" }, 403);
+      if (!doc || doc.user_id !== userId) return jsonResponse(req, { error: "Not your document" }, 403);
       const { data: fr } = await admin.from("friends").select("id, status")
         .or(`and(requester_id.eq.${userId},addressee_id.eq.${friendId}),and(requester_id.eq.${friendId},addressee_id.eq.${userId})`)
         .eq("status", "accepted").maybeSingle();
-      if (!fr) return json({ error: "Not friends" }, 400);
+      if (!fr) return jsonResponse(req, { error: "Not friends" }, 400);
       const { error } = await admin.from("shared_documents").insert({
         document_id: documentId, shared_by_user_id: userId, shared_with_user_id: friendId,
       });
-      if (error) return json({ error: error.code === "23505" ? "Already shared with this friend" : error.message }, 400);
+      if (error) {
+        if (error.code === "23505") return jsonResponse(req, { error: "Already shared with this friend" }, 400);
+        console.error("[friends-action] share insert error", error);
+        return jsonResponse(req, { error: "Could not share document" }, 500);
+      }
       await awardXp(admin, userId, 10, "share_summary");
-      return json({ ok: true });
+      return jsonResponse(req, { ok: true });
     }
 
     if (action === "shared_received") {
@@ -210,7 +232,7 @@ serve(async (req) => {
         ? await admin.from("profiles").select("id, username, avatar_url").in("id", ids)
         : { data: [] };
       const byId = new Map((profs || []).map((p: any) => [p.id, p]));
-      return json({
+      return jsonResponse(req, {
         items: (rows || []).map((r: any) => ({
           id: r.id, created_at: r.created_at, sharedBy: byId.get(r.shared_by_user_id), document: r.documents,
         })),
@@ -228,16 +250,16 @@ serve(async (req) => {
         ? await admin.from("profiles").select("id, username, avatar_url").in("id", ids)
         : { data: [] };
       const byId = new Map((profs || []).map((p: any) => [p.id, p]));
-      return json({
+      return jsonResponse(req, {
         items: (rows || []).map((r: any) => ({
           id: r.id, created_at: r.created_at, sharedWith: byId.get(r.shared_with_user_id), document: r.documents,
         })),
       });
     }
 
-    return json({ error: "Unknown action" }, 400);
+    return jsonResponse(req, { error: "Unknown action" }, 400);
   } catch (e) {
-    console.error(e);
-    return json({ error: String(e) }, 500);
+    console.error("[friends-action] unexpected error", e);
+    return jsonResponse(req, { error: "Internal server error" }, 500);
   }
 });
