@@ -1,15 +1,23 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 
-const cors = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-// XP and leveling — must mirror src/lib/leveling.ts
+const ALLOWED_REASONS = new Set([
+  "summary",
+  "flashcards",
+  "quiz",
+  "quiz_perfect",
+  "friend_accept",
+  "share_summary",
+  "daily_streak",
+]);
+const PER_CALL_CAP = 200;
+const DAILY_CAP = 500;
+
 function thresholdForLevel(level: number): number {
   if (level <= 1) return 0;
   let total = 0;
@@ -27,29 +35,39 @@ function levelFromXp(xp: number): number {
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: cors });
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders(req) });
   try {
     const auth = req.headers.get("Authorization");
-    if (!auth) return json({ error: "Unauthorized" }, 401);
+    if (!auth) return jsonResponse(req, { error: "Unauthorized" }, 401);
     const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { global: { headers: { Authorization: auth } } });
     const { data: u } = await userClient.auth.getUser();
-    if (!u?.user) return json({ error: "Unauthorized" }, 401);
+    if (!u?.user) return jsonResponse(req, { error: "Unauthorized" }, 401);
     const userId = u.user.id;
 
-    const { amount, reason } = await req.json();
-    const xp = Math.max(0, Math.min(2000, Number(amount) || 0));
-    if (!xp) return json({ error: "Invalid amount" }, 400);
+    const body = await req.json().catch(() => ({}));
+    const reason = String(body.reason || "");
+    if (!ALLOWED_REASONS.has(reason)) return jsonResponse(req, { error: "Invalid reason" }, 400);
 
-    // Use service role for atomic profile update + xp_event log
+    let xp = Math.floor(Number(body.amount) || 0);
+    if (xp <= 0) return jsonResponse(req, { error: "Invalid amount" }, 400);
+    xp = Math.min(xp, PER_CALL_CAP);
+
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // Enforce server-side daily cap
+    const { data: dailyData } = await admin.rpc("daily_xp_total", { _user_id: userId });
+    const todayTotal = Number(dailyData) || 0;
+    const remaining = Math.max(0, DAILY_CAP - todayTotal);
+    xp = Math.min(xp, remaining);
+    if (xp <= 0) return jsonResponse(req, { awarded: 0, dailyCapReached: true });
+
     const { data: profile, error: pErr } = await admin
       .from("profiles")
       .select("xp, level, streak_count, longest_streak, last_active_date")
       .eq("id", userId)
       .single();
-    if (pErr || !profile) return json({ error: "Profile not found" }, 404);
+    if (pErr || !profile) return jsonResponse(req, { error: "Profile not found" }, 404);
 
-    // Streak logic
     const today = new Date().toISOString().slice(0, 10);
     const last = profile.last_active_date as string | null;
     let streak = profile.streak_count ?? 0;
@@ -62,7 +80,7 @@ serve(async (req) => {
       const yStr = yesterday.toISOString().slice(0, 10);
       if (last === yStr) streak += 1;
       else streak = 1;
-      streakBonus = 10;
+      streakBonus = Math.min(10, Math.max(0, DAILY_CAP - todayTotal - xp));
       if (streak > longest) longest = streak;
     }
 
@@ -80,12 +98,15 @@ serve(async (req) => {
         last_active_date: today,
       })
       .eq("id", userId);
-    if (upErr) return json({ error: upErr.message }, 500);
+    if (upErr) {
+      console.error("[award-xp] profile update error", upErr);
+      return jsonResponse(req, { error: "Internal server error" }, 500);
+    }
 
     await admin.from("xp_events").insert({ user_id: userId, amount: xp, reason });
     if (streakBonus) await admin.from("xp_events").insert({ user_id: userId, amount: streakBonus, reason: "daily_streak" });
 
-    return json({
+    return jsonResponse(req, {
       awarded: xp,
       streakBonus,
       newXp,
@@ -94,11 +115,7 @@ serve(async (req) => {
       streak,
     });
   } catch (e) {
-    console.error(e);
-    return json({ error: String(e) }, 500);
+    console.error("[award-xp] unexpected error", e);
+    return jsonResponse(req, { error: "Internal server error" }, 500);
   }
 });
-
-function json(b: unknown, status = 200) {
-  return new Response(JSON.stringify(b), { status, headers: { ...cors, "Content-Type": "application/json" } });
-}
