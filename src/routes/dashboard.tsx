@@ -5,7 +5,7 @@ import { BuckLogo } from "@/components/BuckLogo";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { friendsCall } from "@/lib/friends";
-import { levelProgress, titleForLevel } from "@/lib/leveling";
+import { levelProgress } from "@/lib/leveling";
 import { Flame, FolderOpen, BookOpen, FileText, Users } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard")({
