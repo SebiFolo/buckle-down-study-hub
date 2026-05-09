@@ -18,7 +18,9 @@ serve(async (req) => {
   try {
     const auth = req.headers.get("Authorization");
     if (!auth) return json({ error: "Unauthorized" }, 401);
-    const supa = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { global: { headers: { Authorization: auth } } });
+    const supa = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: auth } },
+    });
     const { data: u } = await supa.auth.getUser();
     if (!u?.user) return json({ error: "Unauthorized" }, 401);
 
@@ -38,7 +40,8 @@ serve(async (req) => {
       }),
     });
     if (r.status === 429) return json({ error: "Rate limit, try again in a moment." }, 429);
-    if (r.status === 402) return json({ error: "AI credits exhausted. Add funds in Workspace settings." }, 402);
+    if (r.status === 402)
+      return json({ error: "AI credits exhausted. Add funds in Workspace settings." }, 402);
     if (!r.ok) {
       console.error("AI error", r.status, await r.text());
       return json({ error: "AI service error" }, 500);
@@ -53,5 +56,8 @@ serve(async (req) => {
 });
 
 function json(b: unknown, status = 200) {
-  return new Response(JSON.stringify(b), { status, headers: { ...cors, "Content-Type": "application/json" } });
+  return new Response(JSON.stringify(b), {
+    status,
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
 }
