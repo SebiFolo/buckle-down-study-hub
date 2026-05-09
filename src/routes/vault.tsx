@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { awardXp } from "@/lib/xp";
-import { Upload, FileText, Trash2, Eye, Play, Pause, Square, Link as LinkIcon } from "lucide-react";
+import { Upload, FileText, Trash2, Eye, Play, Pause, Square, Link as LinkIcon, Share2 } from "lucide-react";
+import { ShareDocumentModal } from "@/components/ShareDocumentModal";
 
 export const Route = createFileRoute("/vault")({ component: VaultPage });
 
