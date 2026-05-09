@@ -25,6 +25,7 @@ function DashboardPage() {
   const nav = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [recent, setRecent] = useState<Array<{ id: string; title: string; created_at: string; kind: "doc" | "quiz" }>>([]);
+  const [activity, setActivity] = useState<Array<{ key: string; text: string }>>([]);
 
   useEffect(() => {
     if (!loading && !user) nav({ to: "/login" });
@@ -44,6 +45,27 @@ function DashboardPage() {
         ...(quizzes || []).map((q: any) => ({ id: q.id, title: q.quizzes?.title ?? "Quiz", created_at: q.completed_at, kind: "quiz" as const })),
       ].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at)).slice(0, 5);
       setRecent(items);
+
+      // Friends activity
+      try {
+        const [{ friends }, { items: shared }] = await Promise.all([
+          friendsCall<{ friends: any[] }>("list"),
+          friendsCall<{ items: any[] }>("shared_received"),
+        ]);
+        const events: Array<{ key: string; text: string; ts: number }> = [];
+        for (const f of friends || []) {
+          if (f.level >= 2) events.push({ key: `lvl-${f.id}`, text: `${f.username} reached Level ${f.level}! 🎉`, ts: Date.now() - 1 });
+          if (f.streak_count >= 3) events.push({ key: `streak-${f.id}`, text: `${f.username} is on a ${f.streak_count}-day streak! 🔥`, ts: Date.now() - 2 });
+        }
+        for (const s of shared || []) {
+          events.push({
+            key: `share-${s.id}`,
+            text: `${s.sharedBy?.username || "A friend"} shared a summary with you 📄`,
+            ts: +new Date(s.created_at),
+          });
+        }
+        setActivity(events.sort((a, b) => b.ts - a.ts).slice(0, 5));
+      } catch {}
     })();
   }, [user]);
 
