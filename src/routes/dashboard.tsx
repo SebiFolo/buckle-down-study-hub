@@ -154,6 +154,23 @@ function DashboardPage() {
             </ul>
           )}
         </div>
+
+        {/* Friends Activity */}
+        <div className="buck-card p-6 mt-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold flex items-center gap-2"><Users className="h-4 w-4 text-primary" /> Friends activity</h2>
+            <Link to="/friends" className="text-xs text-primary hover:underline">View all</Link>
+          </div>
+          {activity.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Add friends to see their activity here!</p>
+          ) : (
+            <ul className="space-y-2">
+              {activity.map((a) => (
+                <li key={a.key} className="text-sm text-foreground/90">{a.text}</li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </AppShell>
   );
