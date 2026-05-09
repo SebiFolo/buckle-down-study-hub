@@ -9,6 +9,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ALLOWED_REASONS = new Set([
   "summary",
   "flashcards",
+  "flashcard_set",
   "quiz",
   "quiz_perfect",
   "friend_accept",
