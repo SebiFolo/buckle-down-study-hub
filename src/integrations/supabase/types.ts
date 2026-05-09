@@ -337,7 +337,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      daily_xp_total: { Args: { _user_id: string }; Returns: number }
     }
     Enums: {
       friend_status: "pending" | "accepted" | "rejected"
