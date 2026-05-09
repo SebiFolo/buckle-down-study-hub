@@ -4,8 +4,9 @@ import { AppShell } from "@/components/AppShell";
 import { BuckLogo } from "@/components/BuckLogo";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
+import { friendsCall } from "@/lib/friends";
 import { levelProgress } from "@/lib/leveling";
-import { Flame, FolderOpen, BookOpen, FileText } from "lucide-react";
+import { Flame, FolderOpen, BookOpen, FileText, Users } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardPage,
@@ -24,6 +25,7 @@ function DashboardPage() {
   const nav = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [recent, setRecent] = useState<Array<{ id: string; title: string; created_at: string; kind: "doc" | "quiz" }>>([]);
+  const [activity, setActivity] = useState<Array<{ key: string; text: string }>>([]);
 
   useEffect(() => {
     if (!loading && !user) nav({ to: "/login" });
@@ -43,6 +45,27 @@ function DashboardPage() {
         ...(quizzes || []).map((q: any) => ({ id: q.id, title: q.quizzes?.title ?? "Quiz", created_at: q.completed_at, kind: "quiz" as const })),
       ].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at)).slice(0, 5);
       setRecent(items);
+
+      // Friends activity
+      try {
+        const [{ friends }, { items: shared }] = await Promise.all([
+          friendsCall<{ friends: any[] }>("list"),
+          friendsCall<{ items: any[] }>("shared_received"),
+        ]);
+        const events: Array<{ key: string; text: string; ts: number }> = [];
+        for (const f of friends || []) {
+          if (f.level >= 2) events.push({ key: `lvl-${f.id}`, text: `${f.username} reached Level ${f.level}! 🎉`, ts: Date.now() - 1 });
+          if (f.streak_count >= 3) events.push({ key: `streak-${f.id}`, text: `${f.username} is on a ${f.streak_count}-day streak! 🔥`, ts: Date.now() - 2 });
+        }
+        for (const s of shared || []) {
+          events.push({
+            key: `share-${s.id}`,
+            text: `${s.sharedBy?.username || "A friend"} shared a summary with you 📄`,
+            ts: +new Date(s.created_at),
+          });
+        }
+        setActivity(events.sort((a, b) => b.ts - a.ts).slice(0, 5));
+      } catch {}
     })();
   }, [user]);
 
@@ -127,6 +150,23 @@ function DashboardPage() {
                   <span className="flex-1 truncate">{r.title}</span>
                   <span className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</span>
                 </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Friends Activity */}
+        <div className="buck-card p-6 mt-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold flex items-center gap-2"><Users className="h-4 w-4 text-primary" /> Friends activity</h2>
+            <Link to="/friends" className="text-xs text-primary hover:underline">View all</Link>
+          </div>
+          {activity.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Add friends to see their activity here!</p>
+          ) : (
+            <ul className="space-y-2">
+              {activity.map((a) => (
+                <li key={a.key} className="text-sm text-foreground/90">{a.text}</li>
               ))}
             </ul>
           )}

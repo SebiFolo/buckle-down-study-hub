@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { awardXp } from "@/lib/xp";
-import { Upload, FileText, Trash2, Eye, Play, Pause, Square, Link as LinkIcon } from "lucide-react";
+import { Upload, FileText, Trash2, Eye, Play, Pause, Square, Link as LinkIcon, Share2 } from "lucide-react";
+import { ShareDocumentModal } from "@/components/ShareDocumentModal";
 
 export const Route = createFileRoute("/vault")({ component: VaultPage });
 
@@ -23,6 +24,7 @@ function VaultPage() {
   const [busy, setBusy] = useState(false);
   const [gdoc, setGdoc] = useState("");
   const [view, setView] = useState<Doc | null>(null);
+  const [shareDoc, setShareDoc] = useState<Doc | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { if (!loading && !user) nav({ to: "/login" }); }, [user, loading, nav]);
@@ -147,8 +149,9 @@ function VaultPage() {
                 </div>
               </div>
               <p className="text-xs text-muted-foreground mt-2 line-clamp-3">{d.summary?.replace(/[#*]/g, "").slice(0, 160)}</p>
-              <div className="mt-3 flex gap-2">
+              <div className="mt-3 flex gap-2 flex-wrap">
                 <Button size="sm" variant="outline" onClick={() => setView(d)}><Eye className="h-3 w-3 mr-1" /> View</Button>
+                <Button size="sm" variant="outline" onClick={() => setShareDoc(d)}><Share2 className="h-3 w-3 mr-1" /> Share</Button>
                 <Button size="sm" variant="ghost" onClick={() => del(d.id)}><Trash2 className="h-3 w-3" /></Button>
               </div>
             </div>
@@ -156,6 +159,12 @@ function VaultPage() {
         </div>
 
         <SummaryModal doc={view} onClose={() => setView(null)} />
+        <ShareDocumentModal
+          open={!!shareDoc}
+          onClose={() => setShareDoc(null)}
+          documentId={shareDoc?.id ?? null}
+          documentTitle={shareDoc?.title}
+        />
       </div>
     </AppShell>
   );
