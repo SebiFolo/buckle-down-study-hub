@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, FolderOpen, BookOpen, User, LogOut } from "lucide-react";
+import { LayoutDashboard, FolderOpen, BookOpen, Users, User, LogOut } from "lucide-react";
 import { BuckLogo } from "./BuckLogo";
+import { NotificationsBell } from "./NotificationsBell";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -10,6 +11,7 @@ const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/vault", label: "Vault", icon: FolderOpen },
   { to: "/study", label: "Study", icon: BookOpen },
+  { to: "/friends", label: "Friends", icon: Users },
   { to: "/profile", label: "Profile", icon: User },
 ] as const;
 
@@ -51,8 +53,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
-        <div className="mt-auto">
-          <Button variant="ghost" size="sm" className="w-full justify-start" onClick={signOut}>
+        <div className="mt-auto flex items-center gap-1">
+          <NotificationsBell />
+          <Button variant="ghost" size="sm" className="flex-1 justify-start" onClick={signOut}>
             <LogOut className="h-4 w-4 mr-2" /> Sign out
           </Button>
         </div>
@@ -64,9 +67,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           <BuckLogo className="h-7 w-7" />
           <span className="font-bold">Buckle Down</span>
         </Link>
-        <Button variant="ghost" size="sm" onClick={signOut}>
-          <LogOut className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <NotificationsBell />
+          <Button variant="ghost" size="sm" onClick={signOut}>
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </div>
       </header>
 
       <main className="flex-1 pb-20 md:pb-6">{children}</main>
