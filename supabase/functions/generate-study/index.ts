@@ -1,28 +1,26 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const cors = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: cors });
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders(req) });
   try {
     const auth = req.headers.get("Authorization");
-    if (!auth) return json({ error: "Unauthorized" }, 401);
+    if (!auth) return jsonResponse(req, { error: "Unauthorized" }, 401);
     const supa = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { global: { headers: { Authorization: auth } } });
     const { data: u } = await supa.auth.getUser();
-    if (!u?.user) return json({ error: "Unauthorized" }, 401);
+    if (!u?.user) return jsonResponse(req, { error: "Unauthorized" }, 401);
 
-    const { mode, text } = await req.json(); // mode: 'flashcards' | 'quiz'
-    if (!text) return json({ error: "Missing text" }, 400);
-    const truncated = String(text).slice(0, 50_000);
+    const body = await req.json().catch(() => ({}));
+    const mode = body.mode === "quiz" ? "quiz" : body.mode === "flashcards" ? "flashcards" : null;
+    const text = typeof body.text === "string" ? body.text : "";
+    if (!mode) return jsonResponse(req, { error: "Invalid mode" }, 400);
+    if (!text) return jsonResponse(req, { error: "Missing text" }, 400);
+    const truncated = text.slice(0, 50_000);
 
     const isQuiz = mode === "quiz";
     const tool = isQuiz
@@ -101,23 +99,19 @@ serve(async (req) => {
         tool_choice: { type: "function", function: { name: tool.function.name } },
       }),
     });
-    if (r.status === 429) return json({ error: "Rate limit, try again in a moment." }, 429);
-    if (r.status === 402) return json({ error: "AI credits exhausted." }, 402);
+    if (r.status === 429) return jsonResponse(req, { error: "Rate limit, try again in a moment." }, 429);
+    if (r.status === 402) return jsonResponse(req, { error: "AI credits exhausted." }, 402);
     if (!r.ok) {
-      console.error("AI error", r.status, await r.text());
-      return json({ error: "AI service error" }, 500);
+      console.error("[generate-study] AI error", r.status, await r.text());
+      return jsonResponse(req, { error: "AI service error" }, 500);
     }
     const data = await r.json();
     const args = data.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
-    if (!args) return json({ error: "No structured output" }, 500);
+    if (!args) return jsonResponse(req, { error: "No structured output" }, 500);
     const parsed = JSON.parse(args);
-    return json(parsed);
+    return jsonResponse(req, parsed);
   } catch (e) {
-    console.error(e);
-    return json({ error: String(e) }, 500);
+    console.error("[generate-study] unexpected error", e);
+    return jsonResponse(req, { error: "Internal server error" }, 500);
   }
 });
-
-function json(b: unknown, status = 200) {
-  return new Response(JSON.stringify(b), { status, headers: { ...cors, "Content-Type": "application/json" } });
-}

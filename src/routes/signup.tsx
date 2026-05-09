@@ -40,12 +40,13 @@ function SignupPage() {
     });
     setLoading(false);
     if (error) {
-      if (error.message.toLowerCase().includes("already")) toast.error("An account with that email already exists");
-      else toast.error(error.message);
+      // Neutral message to avoid user enumeration
+      console.error("[signup] error", error);
+      toast.error("Could not complete signup. If this email is new, check your inbox to verify your account.");
       return;
     }
-    toast.success("Welcome to Buckle Down! 🦌");
-    nav({ to: "/dashboard" });
+    toast.success("Check your inbox to verify your account! 🦌");
+    nav({ to: "/login" });
   };
 
   return (
