@@ -25,8 +25,12 @@ function Landing() {
           <span className="font-bold text-xl tracking-tight">Buckle Down</span>
         </div>
         <div className="flex items-center gap-2">
-          <Link to="/login"><Button variant="ghost">Log in</Button></Link>
-          <Link to="/signup"><Button>Sign up</Button></Link>
+          <Link to="/login">
+            <Button variant="ghost">Log in</Button>
+          </Link>
+          <Link to="/signup">
+            <Button>Sign up</Button>
+          </Link>
         </div>
       </header>
 
@@ -38,20 +42,38 @@ function Landing() {
           Buckle down. <span className="text-primary">Study smarter.</span>
         </h1>
         <p className="mt-5 text-lg text-muted-foreground">
-          Upload your notes, get instant AI summaries, generate flashcards & quizzes,
-          and level up your buck as you learn.
+          Upload your notes, get instant AI summaries, generate flashcards & quizzes, and level up
+          your buck as you learn.
         </p>
         <div className="mt-8 flex justify-center gap-3">
-          <Link to="/signup"><Button size="lg">Get started — it's free</Button></Link>
-          <Link to="/login"><Button size="lg" variant="outline">I have an account</Button></Link>
+          <Link to="/signup">
+            <Button size="lg">Get started — it's free</Button>
+          </Link>
+          <Link to="/login">
+            <Button size="lg" variant="outline">
+              I have an account
+            </Button>
+          </Link>
         </div>
       </section>
 
       <section className="container mx-auto px-6 pb-20 grid md:grid-cols-3 gap-4 max-w-5xl">
         {[
-          { icon: BookOpen, title: "AI Summaries", body: "Drop in a PDF, DOCX, or Google Doc. Get a clean academic summary in seconds." },
-          { icon: Flame, title: "Streaks & XP", body: "Build a daily streak, earn XP, and climb buck levels — Fawn to Grand Buck." },
-          { icon: Trophy, title: "Smart Quizzes", body: "Auto-generated multiple choice quizzes and flashcards from your own notes." },
+          {
+            icon: BookOpen,
+            title: "AI Summaries",
+            body: "Drop in a PDF, DOCX, or Google Doc. Get a clean academic summary in seconds.",
+          },
+          {
+            icon: Flame,
+            title: "Streaks & XP",
+            body: "Build a daily streak, earn XP, and climb buck levels — Fawn to Grand Buck.",
+          },
+          {
+            icon: Trophy,
+            title: "Smart Quizzes",
+            body: "Auto-generated multiple choice quizzes and flashcards from your own notes.",
+          },
         ].map((f) => (
           <div key={f.title} className="buck-card p-6">
             <f.icon className="h-6 w-6 text-primary mb-3" />

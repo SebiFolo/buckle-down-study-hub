@@ -7,8 +7,18 @@ import { useAuth } from "@/lib/auth-context";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 
-interface IncomingReq { friendRowId: string; id: string; username: string; level: number; }
-interface SharedItem { id: string; created_at: string; sharedBy: { username: string } | null; document: { title: string } | null; }
+interface IncomingReq {
+  friendRowId: string;
+  id: string;
+  username: string;
+  level: number;
+}
+interface SharedItem {
+  id: string;
+  created_at: string;
+  sharedBy: { username: string } | null;
+  document: { title: string } | null;
+}
 
 export function NotificationsBell() {
   const { user } = useAuth();
@@ -28,17 +38,26 @@ export function NotificationsBell() {
     } catch {}
   };
 
-  useEffect(() => { refresh(); const t = setInterval(refresh, 30000); return () => clearInterval(t); }, [user]);
+  useEffect(() => {
+    refresh();
+    const t = setInterval(refresh, 30000);
+    return () => clearInterval(t);
+  }, [user]);
 
   const accept = async (rowId: string) => {
     try {
       await friendsCall("accept", { friendRowId: rowId });
       toast.success("Friend added! +15 XP earned 🎉");
       refresh();
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) {
+      toast.error(e.message);
+    }
   };
   const reject = async (rowId: string) => {
-    try { await friendsCall("reject", { friendRowId: rowId }); refresh(); } catch {}
+    try {
+      await friendsCall("reject", { friendRowId: rowId });
+      refresh();
+    } catch {}
   };
 
   const count = incoming.length + shared.length;
@@ -60,23 +79,37 @@ export function NotificationsBell() {
         <div className="p-3 border-b border-border font-semibold text-sm">Notifications</div>
         <div className="max-h-96 overflow-y-auto">
           {count === 0 && (
-            <div className="p-6 text-center text-sm text-muted-foreground">You're all caught up! 🦌</div>
+            <div className="p-6 text-center text-sm text-muted-foreground">
+              You're all caught up! 🦌
+            </div>
           )}
           {incoming.map((r) => (
             <div key={r.friendRowId} className="p-3 border-b border-border flex items-center gap-2">
               <div className="flex-1 min-w-0">
-                <div className="text-sm"><span className="font-medium">{r.username}</span> wants to be friends</div>
+                <div className="text-sm">
+                  <span className="font-medium">{r.username}</span> wants to be friends
+                </div>
                 <div className="text-xs text-muted-foreground">Level {r.level}</div>
               </div>
-              <Button size="icon" variant="ghost" onClick={() => accept(r.friendRowId)}><Check className="h-4 w-4 text-success" /></Button>
-              <Button size="icon" variant="ghost" onClick={() => reject(r.friendRowId)}><X className="h-4 w-4" /></Button>
+              <Button size="icon" variant="ghost" onClick={() => accept(r.friendRowId)}>
+                <Check className="h-4 w-4 text-success" />
+              </Button>
+              <Button size="icon" variant="ghost" onClick={() => reject(r.friendRowId)}>
+                <X className="h-4 w-4" />
+              </Button>
             </div>
           ))}
           {shared.map((s) => (
-            <Link key={s.id} to="/friends" onClick={() => setOpen(false)} className="p-3 border-b border-border flex items-center gap-2 hover:bg-accent/30 transition">
+            <Link
+              key={s.id}
+              to="/friends"
+              onClick={() => setOpen(false)}
+              className="p-3 border-b border-border flex items-center gap-2 hover:bg-accent/30 transition"
+            >
               <FileText className="h-4 w-4 text-primary shrink-0" />
               <div className="flex-1 min-w-0 text-sm">
-                <span className="font-medium">{s.sharedBy?.username || "Friend"}</span> shared <span className="truncate">{s.document?.title || "a summary"}</span>
+                <span className="font-medium">{s.sharedBy?.username || "Friend"}</span> shared{" "}
+                <span className="truncate">{s.document?.title || "a summary"}</span>
               </div>
             </Link>
           ))}

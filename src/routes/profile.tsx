@@ -13,7 +13,9 @@ function ProfilePage() {
   const nav = useNavigate();
   const [stats, setStats] = useState<any>(null);
 
-  useEffect(() => { if (!loading && !user) nav({ to: "/login" }); }, [user, loading, nav]);
+  useEffect(() => {
+    if (!loading && !user) nav({ to: "/login" });
+  }, [user, loading, nav]);
 
   useEffect(() => {
     if (!user) return;
@@ -27,7 +29,12 @@ function ProfilePage() {
     })();
   }, [user]);
 
-  if (!user || !stats) return <AppShell><div className="p-8">Loading...</div></AppShell>;
+  if (!user || !stats)
+    return (
+      <AppShell>
+        <div className="p-8">Loading...</div>
+      </AppShell>
+    );
 
   return (
     <AppShell>
@@ -37,7 +44,10 @@ function ProfilePage() {
           <div>
             <h1 className="text-2xl font-bold">{stats.username}</h1>
             <p className="text-sm text-muted-foreground">{user.email}</p>
-            <p className="text-sm mt-1">Level {stats.level} — <span className="text-primary font-medium">{titleForLevel(stats.level)}</span></p>
+            <p className="text-sm mt-1">
+              Level {stats.level} —{" "}
+              <span className="text-primary font-medium">{titleForLevel(stats.level)}</span>
+            </p>
           </div>
         </div>
 

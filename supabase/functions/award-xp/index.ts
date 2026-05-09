@@ -40,7 +40,9 @@ serve(async (req) => {
   try {
     const auth = req.headers.get("Authorization");
     if (!auth) return jsonResponse(req, { error: "Unauthorized" }, 401);
-    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { global: { headers: { Authorization: auth } } });
+    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: auth } },
+    });
     const { data: u } = await userClient.auth.getUser();
     if (!u?.user) return jsonResponse(req, { error: "Unauthorized" }, 401);
     const userId = u.user.id;
@@ -105,7 +107,10 @@ serve(async (req) => {
     }
 
     await admin.from("xp_events").insert({ user_id: userId, amount: xp, reason });
-    if (streakBonus) await admin.from("xp_events").insert({ user_id: userId, amount: streakBonus, reason: "daily_streak" });
+    if (streakBonus)
+      await admin
+        .from("xp_events")
+        .insert({ user_id: userId, amount: streakBonus, reason: "daily_streak" });
 
     return jsonResponse(req, {
       awarded: xp,

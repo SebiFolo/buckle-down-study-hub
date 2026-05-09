@@ -13,7 +13,12 @@ export const Route = createFileRoute("/signup")({
 });
 
 const schema = z.object({
-  username: z.string().trim().min(3, "Username must be at least 3 characters").max(30).regex(/^[a-zA-Z0-9_]+$/, "Letters, numbers, underscore only"),
+  username: z
+    .string()
+    .trim()
+    .min(3, "Username must be at least 3 characters")
+    .max(30)
+    .regex(/^[a-zA-Z0-9_]+$/, "Letters, numbers, underscore only"),
   email: z.string().trim().email("Invalid email").max(255),
   password: z.string().min(8, "At least 8 characters").max(72),
 });
@@ -42,7 +47,9 @@ function SignupPage() {
     if (error) {
       // Neutral message to avoid user enumeration
       console.error("[signup] error", error);
-      toast.error("Could not complete signup. If this email is new, check your inbox to verify your account.");
+      toast.error(
+        "Could not complete signup. If this email is new, check your inbox to verify your account.",
+      );
       return;
     }
     toast.success("Check your inbox to verify your account! 🦌");
@@ -62,26 +69,52 @@ function SignupPage() {
           <form onSubmit={submit} className="mt-6 space-y-4">
             <div>
               <Label htmlFor="username">Username</Label>
-              <Input id="username" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} required />
+              <Input
+                id="username"
+                value={form.username}
+                onChange={(e) => setForm({ ...form, username: e.target.value })}
+                required
+              />
             </div>
             <div>
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
+              <Input
+                id="email"
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                required
+              />
             </div>
             <div>
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
+              <Input
+                id="password"
+                type="password"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                required
+              />
             </div>
             <div>
               <Label htmlFor="confirm">Confirm password</Label>
-              <Input id="confirm" type="password" value={form.confirm} onChange={(e) => setForm({ ...form, confirm: e.target.value })} required />
+              <Input
+                id="confirm"
+                type="password"
+                value={form.confirm}
+                onChange={(e) => setForm({ ...form, confirm: e.target.value })}
+                required
+              />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Creating account..." : "Sign up"}
             </Button>
           </form>
           <p className="text-sm text-center text-muted-foreground mt-4">
-            Already have an account? <Link to="/login" className="text-primary font-medium hover:underline">Log in</Link>
+            Already have an account?{" "}
+            <Link to="/login" className="text-primary font-medium hover:underline">
+              Log in
+            </Link>
           </p>
         </div>
       </div>

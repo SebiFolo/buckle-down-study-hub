@@ -10,10 +10,16 @@ export async function awardXp(amount: number, reason: string) {
   }
   if (data?.awarded) {
     const total = data.awarded + (data.streakBonus || 0);
-    toast.success(`+${total} XP`, { description: data.streakBonus ? `Includes +${data.streakBonus} daily streak bonus 🔥` : undefined });
+    toast.success(`+${total} XP`, {
+      description: data.streakBonus
+        ? `Includes +${data.streakBonus} daily streak bonus 🔥`
+        : undefined,
+    });
   }
   if (data?.leveledUp) {
-    toast.success(`🎉 Level up! You're now Level ${data.newLevel} — ${titleForLevel(data.newLevel)}`);
+    toast.success(
+      `🎉 Level up! You're now Level ${data.newLevel} — ${titleForLevel(data.newLevel)}`,
+    );
   }
   return data;
 }

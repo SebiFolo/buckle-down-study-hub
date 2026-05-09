@@ -34,7 +34,9 @@ const TITLES: Record<number, string> = {
 
 export function titleForLevel(level: number): string {
   let title = "Fawn";
-  for (const k of Object.keys(TITLES).map(Number).sort((a, b) => a - b)) {
+  for (const k of Object.keys(TITLES)
+    .map(Number)
+    .sort((a, b) => a - b)) {
     if (level >= k) title = TITLES[k];
   }
   return title;

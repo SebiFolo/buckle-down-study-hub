@@ -11,7 +11,9 @@ serve(async (req) => {
   try {
     const auth = req.headers.get("Authorization");
     if (!auth) return jsonResponse(req, { error: "Unauthorized" }, 401);
-    const supa = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { global: { headers: { Authorization: auth } } });
+    const supa = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: auth } },
+    });
     const { data: u } = await supa.auth.getUser();
     if (!u?.user) return jsonResponse(req, { error: "Unauthorized" }, 401);
 
@@ -38,8 +40,16 @@ serve(async (req) => {
                     type: "object",
                     properties: {
                       question: { type: "string" },
-                      options: { type: "array", items: { type: "string" }, minItems: 4, maxItems: 4 },
-                      correct_answer: { type: "string", description: "Must exactly match one of the options" },
+                      options: {
+                        type: "array",
+                        items: { type: "string" },
+                        minItems: 4,
+                        maxItems: 4,
+                      },
+                      correct_answer: {
+                        type: "string",
+                        description: "Must exactly match one of the options",
+                      },
                     },
                     required: ["question", "options", "correct_answer"],
                     additionalProperties: false,
@@ -99,7 +109,8 @@ serve(async (req) => {
         tool_choice: { type: "function", function: { name: tool.function.name } },
       }),
     });
-    if (r.status === 429) return jsonResponse(req, { error: "Rate limit, try again in a moment." }, 429);
+    if (r.status === 429)
+      return jsonResponse(req, { error: "Rate limit, try again in a moment." }, 429);
     if (r.status === 402) return jsonResponse(req, { error: "AI credits exhausted." }, 402);
     if (!r.ok) {
       console.error("[generate-study] AI error", r.status, await r.text());

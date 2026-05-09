@@ -6,7 +6,7 @@ const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-const SYSTEM = `You are an expert academic tutor. Create a detailed yet concise study summary of the provided content. Use clear markdown headings (##), bullet points, and bold key terms. Cover all major concepts. Keep it organized and easy to scan. Do not invent facts not in the source.`;
+const SYSTEM = `You are an expert academic tutor. Create a detailed yet concise study summary of the provided content. Use clear headings and bullet points, but avoid any Markdown or decorative formatting characters (no backticks, no code blocks, no leading '#' or '*' characters). Produce plain text suitable for display and audio playback. Do not invent facts not in the source.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders(req) });
@@ -44,7 +44,8 @@ serve(async (req) => {
       return jsonResponse(req, { error: "AI service error" }, 500);
     }
     const data = await r.json();
-    const summary = data.choices?.[0]?.message?.content ?? "";
+    let summary = data.choices?.[0]?.message?.content ?? "";
+    summary = summary.replace(/\s{2,}/g, " ").trim();
     return jsonResponse(req, { summary });
   } catch (e) {
     console.error("[generate-summary] unexpected error", e);

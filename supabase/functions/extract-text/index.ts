@@ -13,7 +13,9 @@ serve(async (req) => {
   try {
     const auth = req.headers.get("Authorization");
     if (!auth) return jsonResponse(req, { error: "Unauthorized" }, 401);
-    const supa = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { global: { headers: { Authorization: auth } } });
+    const supa = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: auth } },
+    });
     const { data: u } = await supa.auth.getUser();
     if (!u?.user) return jsonResponse(req, { error: "Unauthorized" }, 401);
 
@@ -27,7 +29,15 @@ serve(async (req) => {
       const docId = m[1];
       const exportUrl = `https://docs.google.com/document/d/${docId}/export?format=txt`;
       const r = await fetch(exportUrl);
-      if (!r.ok) return jsonResponse(req, { error: "Could not fetch Google Doc. Make sure sharing is set to 'Anyone with the link'." }, 400);
+      if (!r.ok)
+        return jsonResponse(
+          req,
+          {
+            error:
+              "Could not fetch Google Doc. Make sure sharing is set to 'Anyone with the link'.",
+          },
+          400,
+        );
       const text = await r.text();
       return jsonResponse(req, { text, fileType: "gdocs" });
     }
@@ -42,10 +52,12 @@ serve(async (req) => {
 
     // base64 length to byte size estimate
     const approxBytes = Math.floor(fileBase64.length * 0.75);
-    if (approxBytes > MAX_BYTES) return jsonResponse(req, { error: "File too large (max 20 MB)" }, 413);
+    if (approxBytes > MAX_BYTES)
+      return jsonResponse(req, { error: "File too large (max 20 MB)" }, 413);
 
     const bytes = Uint8Array.from(atob(fileBase64), (c) => c.charCodeAt(0));
-    if (bytes.byteLength > MAX_BYTES) return jsonResponse(req, { error: "File too large (max 20 MB)" }, 413);
+    if (bytes.byteLength > MAX_BYTES)
+      return jsonResponse(req, { error: "File too large (max 20 MB)" }, 413);
 
     let text = "";
 
@@ -69,7 +81,9 @@ serve(async (req) => {
       } else {
         const { unzipSync, strFromU8 } = await import("https://esm.sh/fflate@0.8.2");
         const files = unzipSync(bytes);
-        const slideKeys = Object.keys(files).filter((k) => k.startsWith("ppt/slides/slide") && k.endsWith(".xml"));
+        const slideKeys = Object.keys(files).filter(
+          (k) => k.startsWith("ppt/slides/slide") && k.endsWith(".xml"),
+        );
         const parts: string[] = [];
         for (const k of slideKeys.sort()) {
           const xml = strFromU8(files[k]);

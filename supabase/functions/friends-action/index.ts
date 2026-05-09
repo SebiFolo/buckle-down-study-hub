@@ -9,15 +9,28 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const IDENTIFIER_RE = /^[a-zA-Z0-9._@+-]{1,255}$/;
 const ALLOWED_ACTIONS = new Set([
-  "find", "request", "accept", "reject", "list",
-  "incoming", "outgoing", "unfriend", "cancel", "share",
-  "shared_received", "shared_sent",
+  "find",
+  "request",
+  "accept",
+  "reject",
+  "list",
+  "incoming",
+  "outgoing",
+  "unfriend",
+  "cancel",
+  "share",
+  "shared_received",
+  "shared_sent",
 ]);
 
 function thresholdForLevel(level: number): number {
   if (level <= 1) return 0;
-  let total = 0, delta = 200;
-  for (let l = 2; l <= level; l++) { total += delta; delta = l < 5 ? delta + 100 : delta + 150; }
+  let total = 0,
+    delta = 200;
+  for (let l = 2; l <= level; l++) {
+    total += delta;
+    delta = l < 5 ? delta + 100 : delta + 150;
+  }
   return total;
 }
 function levelFromXp(xp: number): number {
@@ -40,7 +53,9 @@ serve(async (req) => {
   try {
     const auth = req.headers.get("Authorization");
     if (!auth) return jsonResponse(req, { error: "Unauthorized" }, 401);
-    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { global: { headers: { Authorization: auth } } });
+    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: auth } },
+    });
     const { data: u } = await userClient.auth.getUser();
     if (!u?.user) return jsonResponse(req, { error: "Unauthorized" }, 401);
     const userId = u.user.id;
@@ -58,7 +73,8 @@ serve(async (req) => {
 
     if (action === "find") {
       const identifier = String(body.identifier || "").trim();
-      if (!identifier || !IDENTIFIER_RE.test(identifier)) return jsonResponse(req, { error: "Invalid identifier" }, 400);
+      if (!identifier || !IDENTIFIER_RE.test(identifier))
+        return jsonResponse(req, { error: "Invalid identifier" }, 400);
 
       let { data: prof } = await admin
         .from("profiles")
@@ -68,7 +84,9 @@ serve(async (req) => {
 
       if (!prof && identifier.includes("@")) {
         const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-        const match = list?.users?.find((x: any) => x.email?.toLowerCase() === identifier.toLowerCase());
+        const match = list?.users?.find(
+          (x: any) => x.email?.toLowerCase() === identifier.toLowerCase(),
+        );
         if (match) {
           const { data: p2 } = await admin
             .from("profiles")
@@ -85,7 +103,9 @@ serve(async (req) => {
       const { data: existing } = await admin
         .from("friends")
         .select("id, status, requester_id, addressee_id")
-        .or(`and(requester_id.eq.${userId},addressee_id.eq.${prof.id}),and(requester_id.eq.${prof.id},addressee_id.eq.${userId})`)
+        .or(
+          `and(requester_id.eq.${userId},addressee_id.eq.${prof.id}),and(requester_id.eq.${prof.id},addressee_id.eq.${userId})`,
+        )
         .maybeSingle();
 
       return jsonResponse(req, { user: prof, relationship: existing || null });
@@ -93,14 +113,24 @@ serve(async (req) => {
 
     if (action === "request") {
       const targetId = getUuid(body.targetId);
-      if (!targetId || targetId === userId) return jsonResponse(req, { error: "Invalid target" }, 400);
+      if (!targetId || targetId === userId)
+        return jsonResponse(req, { error: "Invalid target" }, 400);
       const { data: existing } = await admin
         .from("friends")
         .select("id, status")
-        .or(`and(requester_id.eq.${userId},addressee_id.eq.${targetId}),and(requester_id.eq.${targetId},addressee_id.eq.${userId})`)
+        .or(
+          `and(requester_id.eq.${userId},addressee_id.eq.${targetId}),and(requester_id.eq.${targetId},addressee_id.eq.${userId})`,
+        )
         .maybeSingle();
-      if (existing) return jsonResponse(req, { error: existing.status === "accepted" ? "Already friends" : "Request already exists" }, 400);
-      const { error } = await admin.from("friends").insert({ requester_id: userId, addressee_id: targetId, status: "pending" });
+      if (existing)
+        return jsonResponse(
+          req,
+          { error: existing.status === "accepted" ? "Already friends" : "Request already exists" },
+          400,
+        );
+      const { error } = await admin
+        .from("friends")
+        .insert({ requester_id: userId, addressee_id: targetId, status: "pending" });
       if (error) {
         console.error("[friends-action] request insert error", error);
         return jsonResponse(req, { error: "Could not send request" }, 500);
@@ -111,9 +141,17 @@ serve(async (req) => {
     if (action === "accept") {
       const friendRowId = getUuid(body.friendRowId);
       if (!friendRowId) return jsonResponse(req, { error: "Invalid id" }, 400);
-      const { data: row } = await admin.from("friends").select("*").eq("id", friendRowId).maybeSingle();
-      if (!row || row.addressee_id !== userId || row.status !== "pending") return jsonResponse(req, { error: "Invalid request" }, 400);
-      await admin.from("friends").update({ status: "accepted", updated_at: new Date().toISOString() }).eq("id", friendRowId);
+      const { data: row } = await admin
+        .from("friends")
+        .select("*")
+        .eq("id", friendRowId)
+        .maybeSingle();
+      if (!row || row.addressee_id !== userId || row.status !== "pending")
+        return jsonResponse(req, { error: "Invalid request" }, 400);
+      await admin
+        .from("friends")
+        .update({ status: "accepted", updated_at: new Date().toISOString() })
+        .eq("id", friendRowId);
       await awardXp(admin, row.requester_id, 15, "friend_accept");
       await awardXp(admin, row.addressee_id, 15, "friend_accept");
       return jsonResponse(req, { ok: true });
@@ -122,8 +160,13 @@ serve(async (req) => {
     if (action === "reject") {
       const friendRowId = getUuid(body.friendRowId);
       if (!friendRowId) return jsonResponse(req, { error: "Invalid id" }, 400);
-      const { data: row } = await admin.from("friends").select("*").eq("id", friendRowId).maybeSingle();
-      if (!row || row.addressee_id !== userId) return jsonResponse(req, { error: "Invalid request" }, 400);
+      const { data: row } = await admin
+        .from("friends")
+        .select("*")
+        .eq("id", friendRowId)
+        .maybeSingle();
+      if (!row || row.addressee_id !== userId)
+        return jsonResponse(req, { error: "Invalid request" }, 400);
       await admin.from("friends").delete().eq("id", friendRowId);
       return jsonResponse(req, { ok: true });
     }
@@ -134,17 +177,21 @@ serve(async (req) => {
         .select("id, requester_id, addressee_id, created_at")
         .eq("status", "accepted")
         .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`);
-      const ids = (rows || []).map((r: any) => (r.requester_id === userId ? r.addressee_id : r.requester_id));
+      const ids = (rows || []).map((r: any) =>
+        r.requester_id === userId ? r.addressee_id : r.requester_id,
+      );
       if (!ids.length) return jsonResponse(req, { friends: [] });
       const { data: profs } = await admin
         .from("profiles")
         .select("id, username, avatar_url, level, xp, streak_count, last_active_date")
         .in("id", ids);
       const byId = new Map((profs || []).map((p: any) => [p.id, p]));
-      const friends = (rows || []).map((r: any) => {
-        const otherId = r.requester_id === userId ? r.addressee_id : r.requester_id;
-        return { friendRowId: r.id, ...byId.get(otherId) };
-      }).filter((f: any) => f.id);
+      const friends = (rows || [])
+        .map((r: any) => {
+          const otherId = r.requester_id === userId ? r.addressee_id : r.requester_id;
+          return { friendRowId: r.id, ...byId.get(otherId) };
+        })
+        .filter((f: any) => f.id);
       return jsonResponse(req, { friends });
     }
 
@@ -156,11 +203,18 @@ serve(async (req) => {
         .eq("status", "pending");
       const ids = (rows || []).map((r: any) => r.requester_id);
       const { data: profs } = ids.length
-        ? await admin.from("profiles").select("id, username, avatar_url, level, streak_count").in("id", ids)
+        ? await admin
+            .from("profiles")
+            .select("id, username, avatar_url, level, streak_count")
+            .in("id", ids)
         : { data: [] };
       const byId = new Map((profs || []).map((p: any) => [p.id, p]));
       return jsonResponse(req, {
-        requests: (rows || []).map((r: any) => ({ friendRowId: r.id, created_at: r.created_at, ...byId.get(r.requester_id) })),
+        requests: (rows || []).map((r: any) => ({
+          friendRowId: r.id,
+          created_at: r.created_at,
+          ...byId.get(r.requester_id),
+        })),
       });
     }
 
@@ -172,28 +226,47 @@ serve(async (req) => {
         .eq("status", "pending");
       const ids = (rows || []).map((r: any) => r.addressee_id);
       const { data: profs } = ids.length
-        ? await admin.from("profiles").select("id, username, avatar_url, level, streak_count").in("id", ids)
+        ? await admin
+            .from("profiles")
+            .select("id, username, avatar_url, level, streak_count")
+            .in("id", ids)
         : { data: [] };
       const byId = new Map((profs || []).map((p: any) => [p.id, p]));
       return jsonResponse(req, {
-        requests: (rows || []).map((r: any) => ({ friendRowId: r.id, created_at: r.created_at, ...byId.get(r.addressee_id) })),
+        requests: (rows || []).map((r: any) => ({
+          friendRowId: r.id,
+          created_at: r.created_at,
+          ...byId.get(r.addressee_id),
+        })),
       });
     }
 
     if (action === "unfriend") {
       const otherId = getUuid(body.targetId);
       if (!otherId) return jsonResponse(req, { error: "Invalid id" }, 400);
-      await admin.from("friends").delete()
-        .or(`and(requester_id.eq.${userId},addressee_id.eq.${otherId}),and(requester_id.eq.${otherId},addressee_id.eq.${userId})`);
-      await admin.from("shared_documents").delete()
-        .or(`and(shared_by_user_id.eq.${userId},shared_with_user_id.eq.${otherId}),and(shared_by_user_id.eq.${otherId},shared_with_user_id.eq.${userId})`);
+      await admin
+        .from("friends")
+        .delete()
+        .or(
+          `and(requester_id.eq.${userId},addressee_id.eq.${otherId}),and(requester_id.eq.${otherId},addressee_id.eq.${userId})`,
+        );
+      await admin
+        .from("shared_documents")
+        .delete()
+        .or(
+          `and(shared_by_user_id.eq.${userId},shared_with_user_id.eq.${otherId}),and(shared_by_user_id.eq.${otherId},shared_with_user_id.eq.${userId})`,
+        );
       return jsonResponse(req, { ok: true });
     }
 
     if (action === "cancel") {
       const friendRowId = getUuid(body.friendRowId);
       if (!friendRowId) return jsonResponse(req, { error: "Invalid id" }, 400);
-      const { data: row } = await admin.from("friends").select("*").eq("id", friendRowId).maybeSingle();
+      const { data: row } = await admin
+        .from("friends")
+        .select("*")
+        .eq("id", friendRowId)
+        .maybeSingle();
       if (!row || row.requester_id !== userId) return jsonResponse(req, { error: "Invalid" }, 400);
       await admin.from("friends").delete().eq("id", friendRowId);
       return jsonResponse(req, { ok: true });
@@ -203,17 +276,30 @@ serve(async (req) => {
       const documentId = getUuid(body.documentId);
       const friendId = getUuid(body.friendId);
       if (!documentId || !friendId) return jsonResponse(req, { error: "Invalid ids" }, 400);
-      const { data: doc } = await admin.from("documents").select("id, user_id, title").eq("id", documentId).maybeSingle();
-      if (!doc || doc.user_id !== userId) return jsonResponse(req, { error: "Not your document" }, 403);
-      const { data: fr } = await admin.from("friends").select("id, status")
-        .or(`and(requester_id.eq.${userId},addressee_id.eq.${friendId}),and(requester_id.eq.${friendId},addressee_id.eq.${userId})`)
-        .eq("status", "accepted").maybeSingle();
+      const { data: doc } = await admin
+        .from("documents")
+        .select("id, user_id, title")
+        .eq("id", documentId)
+        .maybeSingle();
+      if (!doc || doc.user_id !== userId)
+        return jsonResponse(req, { error: "Not your document" }, 403);
+      const { data: fr } = await admin
+        .from("friends")
+        .select("id, status")
+        .or(
+          `and(requester_id.eq.${userId},addressee_id.eq.${friendId}),and(requester_id.eq.${friendId},addressee_id.eq.${userId})`,
+        )
+        .eq("status", "accepted")
+        .maybeSingle();
       if (!fr) return jsonResponse(req, { error: "Not friends" }, 400);
       const { error } = await admin.from("shared_documents").insert({
-        document_id: documentId, shared_by_user_id: userId, shared_with_user_id: friendId,
+        document_id: documentId,
+        shared_by_user_id: userId,
+        shared_with_user_id: friendId,
       });
       if (error) {
-        if (error.code === "23505") return jsonResponse(req, { error: "Already shared with this friend" }, 400);
+        if (error.code === "23505")
+          return jsonResponse(req, { error: "Already shared with this friend" }, 400);
         console.error("[friends-action] share insert error", error);
         return jsonResponse(req, { error: "Could not share document" }, 500);
       }
@@ -224,7 +310,7 @@ serve(async (req) => {
     if (action === "shared_received") {
       const { data: rows } = await admin
         .from("shared_documents")
-        .select("id, created_at, shared_by_user_id, document_id, documents(id, title, summary, file_type)")
+        .select("id, created_at, shared_by_user_id, documents(title, summary, file_type)")
         .eq("shared_with_user_id", userId)
         .order("created_at", { ascending: false });
       const ids = Array.from(new Set((rows || []).map((r: any) => r.shared_by_user_id)));
@@ -234,7 +320,10 @@ serve(async (req) => {
       const byId = new Map((profs || []).map((p: any) => [p.id, p]));
       return jsonResponse(req, {
         items: (rows || []).map((r: any) => ({
-          id: r.id, created_at: r.created_at, sharedBy: byId.get(r.shared_by_user_id), document: r.documents,
+          id: r.id,
+          created_at: r.created_at,
+          sharedBy: byId.get(r.shared_by_user_id),
+          document: r.documents,
         })),
       });
     }
@@ -252,7 +341,10 @@ serve(async (req) => {
       const byId = new Map((profs || []).map((p: any) => [p.id, p]));
       return jsonResponse(req, {
         items: (rows || []).map((r: any) => ({
-          id: r.id, created_at: r.created_at, sharedWith: byId.get(r.shared_with_user_id), document: r.documents,
+          id: r.id,
+          created_at: r.created_at,
+          sharedWith: byId.get(r.shared_with_user_id),
+          document: r.documents,
         })),
       });
     }

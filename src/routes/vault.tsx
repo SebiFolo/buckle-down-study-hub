@@ -20,6 +20,7 @@ import {
   Share2,
 } from "lucide-react";
 import { ShareDocumentModal } from "@/components/ShareDocumentModal";
+import { stripMarkup } from "@/lib/utils";
 
 export const Route = createFileRoute("/vault")({ component: VaultPage });
 
@@ -29,6 +30,7 @@ interface Doc {
   file_type: string;
   summary: string | null;
   created_at: string;
+  user_id: string;
 }
 
 const ACCEPT = ".pdf,.docx,.pptx,.txt,.md";
@@ -71,7 +73,7 @@ function VaultPage() {
   const refresh = async () => {
     const { data } = await supabase
       .from("documents")
-      .select("id,title,file_type,summary,created_at")
+      .select("id,title,file_type,summary,created_at,user_id")
       .order("created_at", { ascending: false });
     setDocs((data as Doc[]) || []);
   };
@@ -245,15 +247,21 @@ function VaultPage() {
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2 line-clamp-3">
-                  {d.summary?.replace(/[#*]/g, "").slice(0, 160)}
+                  {stripMarkup(d.summary).slice(0, 160)}
                 </p>
                 <div className="mt-3 flex gap-2 flex-wrap">
                   <Button size="sm" variant="outline" onClick={() => setView(d)}>
                     <Eye className="h-3 w-3 mr-1" /> View
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => setShareDoc(d)}>
-                    <Share2 className="h-3 w-3 mr-1" /> Share
-                  </Button>
+                  {d.user_id === user.id ? (
+                    <Button size="sm" variant="outline" onClick={() => setShareDoc(d)}>
+                      <Share2 className="h-3 w-3 mr-1" /> Share
+                    </Button>
+                  ) : (
+                    <Button size="sm" variant="outline" disabled>
+                      Shared
+                    </Button>
+                  )}
                   <Button size="sm" variant="ghost" onClick={() => del(d.id)}>
                     <Trash2 className="h-3 w-3" />
                   </Button>
@@ -283,7 +291,7 @@ function SummaryModal({ doc, onClose }: { doc: Doc | null; onClose: () => void }
   const speak = () => {
     if (!doc.summary) return;
     window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(doc.summary.replace(/[#*_>`]/g, ""));
+    const u = new SpeechSynthesisUtterance(stripMarkup(doc.summary));
     u.rate = 1.0;
     u.onend = () => setPlaying(false);
     window.speechSynthesis.speak(u);
@@ -327,7 +335,7 @@ function SummaryModal({ doc, onClose }: { doc: Doc | null; onClose: () => void }
           </Button>
         </div>
         <div className="prose prose-sm max-w-none whitespace-pre-wrap text-sm leading-relaxed">
-          {doc.summary}
+          {stripMarkup(doc.summary)}
         </div>
       </DialogContent>
     </Dialog>
