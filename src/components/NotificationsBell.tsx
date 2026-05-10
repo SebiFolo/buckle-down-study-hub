@@ -130,10 +130,20 @@ export function NotificationsBell() {
                 </div>
                 <div className="text-xs text-muted-foreground">Level {r.level}</div>
               </div>
-              <Button size="icon" variant="ghost" onClick={() => accept(r.friendRowId)} aria-label="Accept">
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => accept(r.friendRowId)}
+                aria-label="Accept"
+              >
                 <Check className="h-4 w-4 text-success" />
               </Button>
-              <Button size="icon" variant="ghost" onClick={() => reject(r.friendRowId)} aria-label="Reject">
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => reject(r.friendRowId)}
+                aria-label="Reject"
+              >
                 <X className="h-4 w-4" />
               </Button>
             </div>

@@ -66,10 +66,7 @@ function LoginPage() {
             </Button>
           </form>
           <p className="text-sm text-center mt-4">
-            <Link
-              to="/forgot-password"
-              className="text-primary font-medium hover:underline"
-            >
+            <Link to="/forgot-password" className="text-primary font-medium hover:underline">
               Forgot password?
             </Link>
           </p>

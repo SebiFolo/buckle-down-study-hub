@@ -44,7 +44,7 @@ Function-specific:
 
 ## Out of scope (call out, don't change)
 
-- **Profile readability**: I'll restrict to *authenticated* users (not fully private), because friend search and any future leaderboard need it. If you want stricter (only friends can see your XP/streak), say so and I'll add a second pass.
+- **Profile readability**: I'll restrict to _authenticated_ users (not fully private), because friend search and any future leaderboard need it. If you want stricter (only friends can see your XP/streak), say so and I'll add a second pass.
 - **Rate limiting beyond the daily XP cap**: True per-IP rate limiting needs Redis/Upstash. The daily cap covers the main abuse vector for now.
 
 After your approval I'll run the migration first, then patch the edge functions and frontend in one pass.
