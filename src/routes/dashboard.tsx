@@ -55,20 +55,22 @@ function DashboardPage() {
       ]);
       if (p) setProfile(p as Profile);
       const items = [
-        ...(docs || []).map((d: Record<string, unknown>) => ({
-          id: d.id,
-          title: d.title,
-          created_at: d.created_at,
+        ...(docs || []).map((d: { id: string; title: string; created_at: string }) => ({
+          id: d.id as string,
+          title: d.title as string,
+          created_at: d.created_at as string,
           kind: "doc" as const,
         })),
-        ...(quizzes || []).map((q: Record<string, unknown>) => ({
-          id: q.id,
-          title: (q.quizzes as Record<string, unknown> | null)?.title ?? "Quiz",
-          created_at: q.completed_at,
-          kind: "quiz" as const,
-        })),
+        ...(quizzes || []).map(
+          (q: { id: string; completed_at: string; quizzes: { title: string } | null }) => ({
+            id: q.id as string,
+            title: (q.quizzes?.title as string) ?? "Quiz",
+            created_at: q.completed_at as string,
+            kind: "quiz" as const,
+          }),
+        ),
       ]
-        .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))
+        .sort((a, b) => +new Date(b.created_at as string) - +new Date(a.created_at as string))
         .slice(0, 5);
       setRecent(items);
 

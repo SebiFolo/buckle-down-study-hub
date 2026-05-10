@@ -366,8 +366,10 @@ function QuizPlayer({
       .then(({ data }) => {
         setQs(
           (data || []).map((q: Record<string, unknown>) => ({
-            ...q,
-            options: Array.isArray(q.options) ? q.options : [],
+            id: (q.id as string) ?? "",
+            question_text: (q.question_text as string) ?? "",
+            options: Array.isArray(q.options) ? (q.options as string[]) : [],
+            correct_answer: (q.correct_answer as string) ?? "",
           })),
         );
       });

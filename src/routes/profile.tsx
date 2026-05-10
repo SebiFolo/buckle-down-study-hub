@@ -11,7 +11,16 @@ export const Route = createFileRoute("/profile")({ component: ProfilePage });
 function ProfilePage() {
   const { user, loading } = useAuth();
   const nav = useNavigate();
-  const [stats, setStats] = useState<Record<string, unknown> | null>(null);
+  interface UserStats {
+    username: string;
+    level: number;
+    xp: number;
+    streak_count: number;
+    longest_streak: number;
+  }
+  const [stats, setStats] = useState<(UserStats & { docCount: number; quizCount: number }) | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!loading && !user) nav({ to: "/login" });
@@ -25,7 +34,7 @@ function ProfilePage() {
         supabase.from("documents").select("id", { count: "exact", head: true }),
         supabase.from("quiz_attempts").select("id", { count: "exact", head: true }),
       ]);
-      setStats({ ...p, docCount: docCount ?? 0, quizCount: quizCount ?? 0 });
+      setStats({ ...(p as UserStats), docCount: docCount ?? 0, quizCount: quizCount ?? 0 });
     })();
   }, [user]);
 
@@ -42,22 +51,24 @@ function ProfilePage() {
         <div className="buck-card p-6 flex items-center gap-4">
           <BuckLogo className="h-16 w-16 text-primary" />
           <div>
-            <h1 className="text-2xl font-bold">{stats.username}</h1>
+            <h1 className="text-2xl font-bold">{stats.username as string}</h1>
             <p className="text-sm text-muted-foreground">{user.email}</p>
             <p className="text-sm mt-1">
-              Level {stats.level} —{" "}
-              <span className="text-primary font-medium">{titleForLevel(stats.level)}</span>
+              Level {stats.level as number} —{" "}
+              <span className="text-primary font-medium">
+                {titleForLevel(stats.level as number)}
+              </span>
             </p>
           </div>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-          <Stat label="Total XP" value={stats.xp} />
-          <Stat label="Current streak" value={`${stats.streak_count} 🔥`} />
-          <Stat label="Longest streak" value={stats.longest_streak} />
-          <Stat label="Documents" value={stats.docCount} />
-          <Stat label="Quizzes taken" value={stats.quizCount} />
-          <Stat label="Level" value={stats.level} />
+          <Stat label="Total XP" value={stats.xp as number} />
+          <Stat label="Current streak" value={`${stats.streak_count as number} 🔥`} />
+          <Stat label="Longest streak" value={stats.longest_streak as number} />
+          <Stat label="Documents" value={stats.docCount as number} />
+          <Stat label="Quizzes taken" value={stats.quizCount as number} />
+          <Stat label="Level" value={stats.level as number} />
         </div>
       </div>
     </AppShell>

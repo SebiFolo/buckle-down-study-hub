@@ -105,10 +105,17 @@ function MyFriendsTab() {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [q, setQ] = useState("");
   const [searching, setSearching] = useState(false);
-  const [result, setResult] = useState<{
-    user: Record<string, unknown>;
-    relationship: Record<string, unknown> | null;
-  } | null>(null);
+  interface SearchResult extends Record<string, unknown> {
+    user: {
+      username: string;
+      level: number;
+      streak_count: number;
+      id: string;
+      avatar_url: string | null;
+    };
+    relationship: { status: string } | null;
+  }
+  const [result, setResult] = useState<SearchResult | null>(null);
 
   const refresh = async () => {
     try {
@@ -127,10 +134,7 @@ function MyFriendsTab() {
     setSearching(true);
     setResult(null);
     try {
-      const d = await friendsCall<{
-        user: Record<string, unknown>;
-        relationship: Record<string, unknown> | null;
-      }>("find", {
+      const d = await friendsCall<SearchResult>("find", {
         identifier: q.trim(),
       });
       setResult(d);
@@ -181,12 +185,12 @@ function MyFriendsTab() {
       {result && (
         <div className="buck-card p-4 mt-3 flex items-center gap-3">
           <div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center text-primary font-semibold">
-            {result.user.username[0]?.toUpperCase()}
+            {(result.user.username as string)[0]?.toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="font-semibold">{result.user.username}</div>
+            <div className="font-semibold">{result.user.username as string}</div>
             <div className="text-xs text-muted-foreground">
-              Level {result.user.level} · 🔥 {result.user.streak_count}
+              Level {result.user.level as number} · 🔥 {result.user.streak_count as number}
             </div>
           </div>
           {result.relationship?.status === "accepted" ? (
@@ -198,7 +202,7 @@ function MyFriendsTab() {
               Pending
             </Button>
           ) : (
-            <Button size="sm" onClick={() => sendRequest(result.user.id)}>
+            <Button size="sm" onClick={() => sendRequest(result.user.id as string)}>
               <UserPlus className="h-3 w-3 mr-1" /> Send Request
             </Button>
           )}
