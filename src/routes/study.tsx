@@ -17,7 +17,6 @@ import {
 import { toast } from "sonner";
 import { awardXp } from "@/lib/xp";
 import { Plus, Sparkles, Layers, ListChecks } from "lucide-react";
-import { BookOpen } from "lucide-react";
 
 export const Route = createFileRoute("/study")({ component: StudyPage });
 
@@ -44,7 +43,6 @@ function StudyPage() {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [openSet, setOpenSet] = useState<string | null>(null);
   const [openQuiz, setOpenQuiz] = useState<string | null>(null);
-  const [quests, setQuests] = useState<any | null>(null);
 
   useEffect(() => {
     if (!loading && !user) nav({ to: "/login" });
@@ -88,9 +86,6 @@ function StudyPage() {
             <TabsTrigger value="quizzes">
               <ListChecks className="h-4 w-4 mr-1" /> Quizzes
             </TabsTrigger>
-            <TabsTrigger value="quests">
-              <BookOpen className="h-4 w-4 mr-1" /> Quests
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="flashcards" className="mt-4">
@@ -101,66 +96,6 @@ function StudyPage() {
           <TabsContent value="quizzes" className="mt-4">
             <CreateBar mode="quiz" docs={docs} onCreated={refresh} userId={user.id} />
             <Grid items={quizzes} emptyText="No quizzes yet." onOpen={setOpenQuiz} />
-          </TabsContent>
-
-          <TabsContent value="quests" className="mt-4">
-            <div className="buck-card p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-semibold">Quests</div>
-                  <div className="text-xs text-muted-foreground">
-                    Daily and weekly AI-generated study goals
-                  </div>
-                </div>
-                <Button
-                  onClick={async () => {
-                    try {
-                      toast.info("Generating quests...");
-                      const { data, error } = await supabase.functions.invoke("generate-quests");
-                      if (error || data?.error) throw new Error(data?.error || error?.message);
-                      setQuests(data.quests || null);
-                      toast.success("Quests generated");
-                    } catch (e: any) {
-                      toast.error(e.message || "Failed to generate quests");
-                    }
-                  }}
-                >
-                  <Sparkles className="h-4 w-4 mr-1" /> Generate Quests
-                </Button>
-              </div>
-              {quests && (
-                <div className="mt-4 grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="font-medium">Daily</h3>
-                    <ul className="mt-2">
-                      {(quests.daily || []).map((q: any, i: number) => (
-                        <li key={i} className="buck-card p-3 mb-2">
-                          <div className="flex justify-between">
-                            <div className="font-medium">{q.title}</div>
-                            <div className="text-xs text-muted-foreground">{q.xp} XP</div>
-                          </div>
-                          <div className="text-sm text-muted-foreground mt-1">{q.description}</div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div>
-                    <h3 className="font-medium">Weekly</h3>
-                    <ul className="mt-2">
-                      {(quests.weekly || []).map((q: any, i: number) => (
-                        <li key={i} className="buck-card p-3 mb-2">
-                          <div className="flex justify-between">
-                            <div className="font-medium">{q.title}</div>
-                            <div className="text-xs text-muted-foreground">{q.xp} XP</div>
-                          </div>
-                          <div className="text-sm text-muted-foreground mt-1">{q.description}</div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
-            </div>
           </TabsContent>
         </Tabs>
 
