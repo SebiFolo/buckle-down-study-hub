@@ -25,6 +25,27 @@ export function NotificationsBell() {
   const [incoming, setIncoming] = useState<IncomingReq[]>([]);
   const [shared, setShared] = useState<SharedItem[]>([]);
   const [open, setOpen] = useState(false);
+  const [dismissed, setDismissed] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem("buck.dismissedNotifs");
+      return new Set(raw ? (JSON.parse(raw) as string[]) : []);
+    } catch {
+      return new Set();
+    }
+  });
+
+  const persistDismissed = (s: Set<string>) => {
+    localStorage.setItem("buck.dismissedNotifs", JSON.stringify([...s]));
+  };
+
+  const dismiss = (key: string) => {
+    setDismissed((prev) => {
+      const next = new Set(prev);
+      next.add(key);
+      persistDismissed(next);
+      return next;
+    });
+  };
 
   const refresh = async () => {
     if (!user) return;
@@ -34,7 +55,7 @@ export function NotificationsBell() {
         friendsCall<{ items: SharedItem[] }>("shared_received"),
       ]);
       setIncoming(inc.requests || []);
-      setShared((sh.items || []).slice(0, 5));
+      setShared((sh.items || []).slice(0, 10));
     } catch {}
   };
 
@@ -60,7 +81,9 @@ export function NotificationsBell() {
     } catch {}
   };
 
-  const count = incoming.length + shared.length;
+  const visibleIncoming = incoming.filter((r) => !dismissed.has(`req:${r.friendRowId}`));
+  const visibleShared = shared.filter((s) => !dismissed.has(`share:${s.id}`));
+  const count = visibleIncoming.length + visibleShared.length;
   if (!user) return null;
 
   return (
@@ -76,14 +99,30 @@ export function NotificationsBell() {
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0">
-        <div className="p-3 border-b border-border font-semibold text-sm">Notifications</div>
+        <div className="p-3 border-b border-border font-semibold text-sm flex items-center justify-between">
+          <span>Notifications</span>
+          {count > 0 && (
+            <button
+              onClick={() => {
+                const next = new Set(dismissed);
+                visibleIncoming.forEach((r) => next.add(`req:${r.friendRowId}`));
+                visibleShared.forEach((s) => next.add(`share:${s.id}`));
+                setDismissed(next);
+                persistDismissed(next);
+              }}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              Clear all
+            </button>
+          )}
+        </div>
         <div className="max-h-96 overflow-y-auto">
           {count === 0 && (
             <div className="p-6 text-center text-sm text-muted-foreground">
               You're all caught up! 🦌
             </div>
           )}
-          {incoming.map((r) => (
+          {visibleIncoming.map((r) => (
             <div key={r.friendRowId} className="p-3 border-b border-border flex items-center gap-2">
               <div className="flex-1 min-w-0">
                 <div className="text-sm">
@@ -91,27 +130,43 @@ export function NotificationsBell() {
                 </div>
                 <div className="text-xs text-muted-foreground">Level {r.level}</div>
               </div>
-              <Button size="icon" variant="ghost" onClick={() => accept(r.friendRowId)}>
+              <Button size="icon" variant="ghost" onClick={() => accept(r.friendRowId)} aria-label="Accept">
                 <Check className="h-4 w-4 text-success" />
               </Button>
-              <Button size="icon" variant="ghost" onClick={() => reject(r.friendRowId)}>
+              <Button size="icon" variant="ghost" onClick={() => reject(r.friendRowId)} aria-label="Reject">
                 <X className="h-4 w-4" />
               </Button>
             </div>
           ))}
-          {shared.map((s) => (
-            <Link
+          {visibleShared.map((s) => (
+            <div
               key={s.id}
-              to="/friends"
-              onClick={() => setOpen(false)}
               className="p-3 border-b border-border flex items-center gap-2 hover:bg-accent/30 transition"
             >
-              <FileText className="h-4 w-4 text-primary shrink-0" />
-              <div className="flex-1 min-w-0 text-sm">
-                <span className="font-medium">{s.sharedBy?.username || "Friend"}</span> shared{" "}
-                <span className="truncate">{s.document?.title || "a summary"}</span>
-              </div>
-            </Link>
+              <Link
+                to="/friends"
+                onClick={() => setOpen(false)}
+                className="flex-1 flex items-center gap-2 min-w-0"
+              >
+                <FileText className="h-4 w-4 text-primary shrink-0" />
+                <div className="flex-1 min-w-0 text-sm truncate">
+                  <span className="font-medium">{s.sharedBy?.username || "Friend"}</span> shared{" "}
+                  <span>{s.document?.title || "a summary"}</span>
+                </div>
+              </Link>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  dismiss(`share:${s.id}`);
+                }}
+                aria-label="Dismiss"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           ))}
         </div>
       </PopoverContent>
