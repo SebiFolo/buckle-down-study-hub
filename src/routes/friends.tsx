@@ -105,13 +105,18 @@ function MyFriendsTab() {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [q, setQ] = useState("");
   const [searching, setSearching] = useState(false);
-  const [result, setResult] = useState<{ user: any; relationship: any } | null>(null);
+  const [result, setResult] = useState<{
+    user: Record<string, unknown>;
+    relationship: Record<string, unknown> | null;
+  } | null>(null);
 
   const refresh = async () => {
     try {
       const d = await friendsCall<{ friends: Friend[] }>("list");
       setFriends(d.friends || []);
-    } catch {}
+    } catch (error) {
+      console.error("Failed to refresh friends:", error);
+    }
   };
   useEffect(() => {
     refresh();
@@ -122,12 +127,16 @@ function MyFriendsTab() {
     setSearching(true);
     setResult(null);
     try {
-      const d = await friendsCall<{ user: any; relationship: any }>("find", {
+      const d = await friendsCall<{
+        user: Record<string, unknown>;
+        relationship: Record<string, unknown> | null;
+      }>("find", {
         identifier: q.trim(),
       });
       setResult(d);
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      const error = e instanceof Error ? e.message : "Failed to search";
+      toast.error(error);
     } finally {
       setSearching(false);
     }
@@ -138,8 +147,9 @@ function MyFriendsTab() {
       await friendsCall("request", { targetId });
       toast.success("Request sent!");
       setResult((r) => (r ? { ...r, relationship: { status: "pending" } } : r));
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      const error = e instanceof Error ? e.message : "Failed to send request";
+      toast.error(error);
     }
   };
 
@@ -148,8 +158,9 @@ function MyFriendsTab() {
     try {
       await friendsCall("unfriend", { targetId: id });
       refresh();
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      const error = e instanceof Error ? e.message : "Failed to unfriend";
+      toast.error(error);
     }
   };
 
@@ -255,7 +266,9 @@ function RequestsTab() {
       ]);
       setIncoming(i.requests || []);
       setOutgoing(o.requests || []);
-    } catch {}
+    } catch (error) {
+      console.error("Failed to refresh requests:", error);
+    }
   };
   useEffect(() => {
     refresh();
@@ -266,16 +279,18 @@ function RequestsTab() {
       await friendsCall("accept", { friendRowId: id });
       toast.success("Friend added! +15 XP earned 🎉");
       refresh();
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      const error = e instanceof Error ? e.message : "Failed to accept";
+      toast.error(error);
     }
   };
   const reject = async (id: string) => {
     setIncoming((l) => l.filter((r) => r.friendRowId !== id));
     try {
       await friendsCall("reject", { friendRowId: id });
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      const error = e instanceof Error ? e.message : "Failed to reject";
+      toast.error(error);
       refresh();
     }
   };
@@ -283,8 +298,9 @@ function RequestsTab() {
     setOutgoing((l) => l.filter((r) => r.friendRowId !== id));
     try {
       await friendsCall("cancel", { friendRowId: id });
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      const error = e instanceof Error ? e.message : "Failed to cancel";
+      toast.error(error);
       refresh();
     }
   };
@@ -359,7 +375,9 @@ function SharedTab() {
       ]);
       setReceived(r.items || []);
       setSent(s.items || []);
-    } catch {}
+    } catch (error) {
+      console.error("Failed to refresh shared:", error);
+    }
   };
   useEffect(() => {
     refresh();

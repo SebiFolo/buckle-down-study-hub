@@ -39,7 +39,12 @@ function levelFromXp(xp: number): number {
   return lvl;
 }
 
-async function awardXp(admin: any, userId: string, amount: number, reason: string) {
+async function awardXp(
+  admin: ReturnType<typeof createClient>,
+  userId: string,
+  amount: number,
+  reason: string,
+) {
   const { data: p } = await admin.from("profiles").select("xp, level").eq("id", userId).single();
   if (!p) return;
   const newXp = p.xp + amount;
@@ -85,7 +90,7 @@ serve(async (req) => {
       if (!prof && identifier.includes("@")) {
         const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
         const match = list?.users?.find(
-          (x: any) => x.email?.toLowerCase() === identifier.toLowerCase(),
+          (x: { email?: string }) => x.email?.toLowerCase() === identifier.toLowerCase(),
         );
         if (match) {
           const { data: p2 } = await admin
@@ -177,7 +182,7 @@ serve(async (req) => {
         .select("id, requester_id, addressee_id, created_at")
         .eq("status", "accepted")
         .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`);
-      const ids = (rows || []).map((r: any) =>
+      const ids = (rows || []).map((r: { requester_id: string; addressee_id: string }) =>
         r.requester_id === userId ? r.addressee_id : r.requester_id,
       );
       if (!ids.length) return jsonResponse(req, { friends: [] });
@@ -185,13 +190,13 @@ serve(async (req) => {
         .from("profiles")
         .select("id, username, avatar_url, level, xp, streak_count, last_active_date")
         .in("id", ids);
-      const byId = new Map((profs || []).map((p: any) => [p.id, p]));
+      const byId = new Map((profs || []).map((p: { id: string }) => [p.id, p]));
       const friends = (rows || [])
-        .map((r: any) => {
+        .map((r: { requester_id: string; addressee_id: string; id: string }) => {
           const otherId = r.requester_id === userId ? r.addressee_id : r.requester_id;
           return { friendRowId: r.id, ...byId.get(otherId) };
         })
-        .filter((f: any) => f.id);
+        .filter((f: { id?: string }) => f.id);
       return jsonResponse(req, { friends });
     }
 
@@ -201,20 +206,22 @@ serve(async (req) => {
         .select("id, requester_id, created_at")
         .eq("addressee_id", userId)
         .eq("status", "pending");
-      const ids = (rows || []).map((r: any) => r.requester_id);
+      const ids = (rows || []).map((r: { requester_id: string }) => r.requester_id);
       const { data: profs } = ids.length
         ? await admin
             .from("profiles")
             .select("id, username, avatar_url, level, streak_count")
             .in("id", ids)
         : { data: [] };
-      const byId = new Map((profs || []).map((p: any) => [p.id, p]));
+      const byId = new Map((profs || []).map((p: { id: string }) => [p.id, p]));
       return jsonResponse(req, {
-        requests: (rows || []).map((r: any) => ({
-          friendRowId: r.id,
-          created_at: r.created_at,
-          ...byId.get(r.requester_id),
-        })),
+        requests: (rows || []).map(
+          (r: { id: string; created_at: string; requester_id: string }) => ({
+            friendRowId: r.id,
+            created_at: r.created_at,
+            ...byId.get(r.requester_id),
+          }),
+        ),
       });
     }
 
@@ -224,20 +231,22 @@ serve(async (req) => {
         .select("id, addressee_id, created_at")
         .eq("requester_id", userId)
         .eq("status", "pending");
-      const ids = (rows || []).map((r: any) => r.addressee_id);
+      const ids = (rows || []).map((r: { addressee_id: string }) => r.addressee_id);
       const { data: profs } = ids.length
         ? await admin
             .from("profiles")
             .select("id, username, avatar_url, level, streak_count")
             .in("id", ids)
         : { data: [] };
-      const byId = new Map((profs || []).map((p: any) => [p.id, p]));
+      const byId = new Map((profs || []).map((p: { id: string }) => [p.id, p]));
       return jsonResponse(req, {
-        requests: (rows || []).map((r: any) => ({
-          friendRowId: r.id,
-          created_at: r.created_at,
-          ...byId.get(r.addressee_id),
-        })),
+        requests: (rows || []).map(
+          (r: { id: string; created_at: string; addressee_id: string }) => ({
+            friendRowId: r.id,
+            created_at: r.created_at,
+            ...byId.get(r.addressee_id),
+          }),
+        ),
       });
     }
 
@@ -313,18 +322,27 @@ serve(async (req) => {
         .select("id, created_at, shared_by_user_id, documents(title, summary, file_type)")
         .eq("shared_with_user_id", userId)
         .order("created_at", { ascending: false });
-      const ids = Array.from(new Set((rows || []).map((r: any) => r.shared_by_user_id)));
+      const ids = Array.from(
+        new Set((rows || []).map((r: { shared_by_user_id: string }) => r.shared_by_user_id)),
+      );
       const { data: profs } = ids.length
         ? await admin.from("profiles").select("id, username, avatar_url").in("id", ids)
         : { data: [] };
-      const byId = new Map((profs || []).map((p: any) => [p.id, p]));
+      const byId = new Map((profs || []).map((p: { id: string }) => [p.id, p]));
       return jsonResponse(req, {
-        items: (rows || []).map((r: any) => ({
-          id: r.id,
-          created_at: r.created_at,
-          sharedBy: byId.get(r.shared_by_user_id),
-          document: r.documents,
-        })),
+        items: (rows || []).map(
+          (r: {
+            id: string;
+            created_at: string;
+            shared_by_user_id: string;
+            documents: unknown;
+          }) => ({
+            id: r.id,
+            created_at: r.created_at,
+            sharedBy: byId.get(r.shared_by_user_id),
+            document: r.documents,
+          }),
+        ),
       });
     }
 
@@ -334,18 +352,27 @@ serve(async (req) => {
         .select("id, created_at, shared_with_user_id, documents(id, title, file_type)")
         .eq("shared_by_user_id", userId)
         .order("created_at", { ascending: false });
-      const ids = Array.from(new Set((rows || []).map((r: any) => r.shared_with_user_id)));
+      const ids = Array.from(
+        new Set((rows || []).map((r: { shared_with_user_id: string }) => r.shared_with_user_id)),
+      );
       const { data: profs } = ids.length
         ? await admin.from("profiles").select("id, username, avatar_url").in("id", ids)
         : { data: [] };
-      const byId = new Map((profs || []).map((p: any) => [p.id, p]));
+      const byId = new Map((profs || []).map((p: { id: string }) => [p.id, p]));
       return jsonResponse(req, {
-        items: (rows || []).map((r: any) => ({
-          id: r.id,
-          created_at: r.created_at,
-          sharedWith: byId.get(r.shared_with_user_id),
-          document: r.documents,
-        })),
+        items: (rows || []).map(
+          (r: {
+            id: string;
+            created_at: string;
+            shared_with_user_id: string;
+            documents: unknown;
+          }) => ({
+            id: r.id,
+            created_at: r.created_at,
+            sharedWith: byId.get(r.shared_with_user_id),
+            document: r.documents,
+          }),
+        ),
       });
     }
 

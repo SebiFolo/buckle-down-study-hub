@@ -56,29 +56,34 @@ export function NotificationsBell() {
       ]);
       setIncoming(inc.requests || []);
       setShared((sh.items || []).slice(0, 10));
-    } catch {}
+    } catch (error) {
+      console.error("Failed to refresh notifications:", error);
+    }
   };
 
   useEffect(() => {
     refresh();
     const t = setInterval(refresh, 30000);
     return () => clearInterval(t);
-  }, [user]);
+  }, [user, refresh]);
 
   const accept = async (rowId: string) => {
     try {
       await friendsCall("accept", { friendRowId: rowId });
       toast.success("Friend added! +15 XP earned 🎉");
       refresh();
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      const error = e instanceof Error ? e.message : "Failed to accept request";
+      toast.error(error);
     }
   };
   const reject = async (rowId: string) => {
     try {
       await friendsCall("reject", { friendRowId: rowId });
       refresh();
-    } catch {}
+    } catch (error) {
+      console.error("Failed to reject request:", error);
+    }
   };
 
   const visibleIncoming = incoming.filter((r) => !dismissed.has(`req:${r.friendRowId}`));

@@ -176,7 +176,7 @@ function CreateBar({
           .select()
           .single();
         if (sErr) throw sErr;
-        const cards = data.cards.map((c: any, i: number) => ({
+        const cards = data.cards.map((c: Record<string, unknown>, i: number) => ({
           set_id: set.id,
           front_text: c.front,
           back_text: c.back,
@@ -190,7 +190,7 @@ function CreateBar({
           .select()
           .single();
         if (qErr) throw qErr;
-        const qs = data.questions.map((qq: any, i: number) => ({
+        const qs = data.questions.map((qq: Record<string, unknown>, i: number) => ({
           quiz_id: q.id,
           question_text: qq.question,
           options: qq.options,
@@ -204,8 +204,9 @@ function CreateBar({
       setTitle("");
       setDocId("");
       onCreated();
-    } catch (e: any) {
-      toast.error(e.message || "Failed");
+    } catch (e: unknown) {
+      const error = e instanceof Error ? e.message : "Failed";
+      toast.error(error);
     } finally {
       setBusy(false);
     }
@@ -364,7 +365,7 @@ function QuizPlayer({
       .order("position")
       .then(({ data }) => {
         setQs(
-          (data || []).map((q: any) => ({
+          (data || []).map((q: Record<string, unknown>) => ({
             ...q,
             options: Array.isArray(q.options) ? q.options : [],
           })),

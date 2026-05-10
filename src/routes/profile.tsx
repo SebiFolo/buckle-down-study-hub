@@ -11,7 +11,7 @@ export const Route = createFileRoute("/profile")({ component: ProfilePage });
 function ProfilePage() {
   const { user, loading } = useAuth();
   const nav = useNavigate();
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     if (!loading && !user) nav({ to: "/login" });
@@ -64,7 +64,7 @@ function ProfilePage() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: any }) {
+function Stat({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="buck-card p-4">
       <div className="text-xs text-muted-foreground">{label}</div>

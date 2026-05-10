@@ -130,8 +130,9 @@ function VaultPage() {
       if (insErr) throw insErr;
       await awardXp(30, "summary");
       await refresh();
-    } catch (e: any) {
-      toast.error(e.message || "Upload failed");
+    } catch (e: unknown) {
+      const error = e instanceof Error ? e.message : "Upload failed";
+      toast.error(error);
     } finally {
       setBusy(false);
     }
@@ -162,8 +163,9 @@ function VaultPage() {
       await awardXp(30, "summary");
       setGdoc("");
       await refresh();
-    } catch (e: any) {
-      toast.error(e.message || "Failed");
+    } catch (e: unknown) {
+      const error = e instanceof Error ? e.message : "Failed";
+      toast.error(error);
     } finally {
       setBusy(false);
     }

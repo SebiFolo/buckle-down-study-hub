@@ -80,8 +80,9 @@ function QuestsPage() {
         weeklyKey: weekKey(),
       };
       localStorage.setItem(cacheKey, JSON.stringify(cached));
-    } catch (e: any) {
-      toast.error(e.message || "Failed to load quests");
+    } catch (e: unknown) {
+      const error = e instanceof Error ? e.message : "Failed to load quests";
+      toast.error(error);
     } finally {
       setLoading(false);
     }

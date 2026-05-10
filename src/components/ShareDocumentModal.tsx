@@ -49,17 +49,14 @@ export function ShareDocumentModal({
       await friendsCall("share", { documentId, friendId });
       toast.success(`Summary shared with ${name}! +10 XP 🎉`);
       onClose();
-    } catch (e: any) {
-      if (
-        String(e?.message || "")
-          .toLowerCase()
-          .includes("not your document")
-      ) {
+    } catch (e: unknown) {
+      const error = e instanceof Error ? e.message : "Failed to share";
+      if (error.toLowerCase().includes("not your document")) {
         setShareDisabled(true);
         toast.error("Shared summaries can only be viewed, not reshared.");
         return;
       }
-      toast.error(e.message || "Could not share. Please try again.");
+      toast.error(error || "Could not share. Please try again.");
     } finally {
       setSharing(null);
     }

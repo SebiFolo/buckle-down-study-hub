@@ -55,15 +55,15 @@ function DashboardPage() {
       ]);
       if (p) setProfile(p as Profile);
       const items = [
-        ...(docs || []).map((d: any) => ({
+        ...(docs || []).map((d: Record<string, unknown>) => ({
           id: d.id,
           title: d.title,
           created_at: d.created_at,
           kind: "doc" as const,
         })),
-        ...(quizzes || []).map((q: any) => ({
+        ...(quizzes || []).map((q: Record<string, unknown>) => ({
           id: q.id,
-          title: q.quizzes?.title ?? "Quiz",
+          title: (q.quizzes as Record<string, unknown> | null)?.title ?? "Quiz",
           created_at: q.completed_at,
           kind: "quiz" as const,
         })),
@@ -74,9 +74,20 @@ function DashboardPage() {
 
       // Friends activity
       try {
+        interface FriendData {
+          id: string;
+          username: string;
+          level: number;
+          streak_count: number;
+        }
+        interface SharedData {
+          id: string;
+          created_at: string;
+          sharedBy: { username: string } | null;
+        }
         const [{ friends }, { items: shared }] = await Promise.all([
-          friendsCall<{ friends: any[] }>("list"),
-          friendsCall<{ items: any[] }>("shared_received"),
+          friendsCall<{ friends: FriendData[] }>("list"),
+          friendsCall<{ items: SharedData[] }>("shared_received"),
         ]);
         const events: Array<{ key: string; text: string; ts: number }> = [];
         for (const f of friends || []) {
@@ -101,7 +112,9 @@ function DashboardPage() {
           });
         }
         setActivity(events.sort((a, b) => b.ts - a.ts).slice(0, 5));
-      } catch {}
+      } catch (error) {
+        console.error("Failed to load activity:", error);
+      }
     })();
   }, [user]);
 

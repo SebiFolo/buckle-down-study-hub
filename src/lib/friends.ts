@@ -1,8 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export async function friendsCall<T = any>(
+export async function friendsCall<T extends Record<string, unknown> = Record<string, unknown>>(
   action: string,
-  payload: Record<string, any> = {},
+  payload: Record<string, unknown> = {},
 ): Promise<T> {
   const { data, error } = await supabase.functions.invoke("friends-action", {
     body: { action, ...payload },
