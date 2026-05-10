@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as VaultRouteImport } from './routes/vault'
 import { Route as StudyRouteImport } from './routes/study'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as QuestsRouteImport } from './routes/quests'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as FriendsRouteImport } from './routes/friends'
@@ -31,6 +32,11 @@ const StudyRoute = StudyRouteImport.update({
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuestsRoute = QuestsRouteImport.update({
+  id: '/quests',
+  path: '/quests',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/friends': typeof FriendsRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
+  '/quests': typeof QuestsRoute
   '/signup': typeof SignupRoute
   '/study': typeof StudyRoute
   '/vault': typeof VaultRoute
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/friends': typeof FriendsRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
+  '/quests': typeof QuestsRoute
   '/signup': typeof SignupRoute
   '/study': typeof StudyRoute
   '/vault': typeof VaultRoute
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/friends': typeof FriendsRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
+  '/quests': typeof QuestsRoute
   '/signup': typeof SignupRoute
   '/study': typeof StudyRoute
   '/vault': typeof VaultRoute
@@ -98,6 +107,7 @@ export interface FileRouteTypes {
     | '/friends'
     | '/login'
     | '/profile'
+    | '/quests'
     | '/signup'
     | '/study'
     | '/vault'
@@ -108,6 +118,7 @@ export interface FileRouteTypes {
     | '/friends'
     | '/login'
     | '/profile'
+    | '/quests'
     | '/signup'
     | '/study'
     | '/vault'
@@ -118,6 +129,7 @@ export interface FileRouteTypes {
     | '/friends'
     | '/login'
     | '/profile'
+    | '/quests'
     | '/signup'
     | '/study'
     | '/vault'
@@ -129,6 +141,7 @@ export interface RootRouteChildren {
   FriendsRoute: typeof FriendsRoute
   LoginRoute: typeof LoginRoute
   ProfileRoute: typeof ProfileRoute
+  QuestsRoute: typeof QuestsRoute
   SignupRoute: typeof SignupRoute
   StudyRoute: typeof StudyRoute
   VaultRoute: typeof VaultRoute
@@ -155,6 +168,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quests': {
+      id: '/quests'
+      path: '/quests'
+      fullPath: '/quests'
+      preLoaderRoute: typeof QuestsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -201,6 +221,7 @@ const rootRouteChildren: RootRouteChildren = {
   FriendsRoute: FriendsRoute,
   LoginRoute: LoginRoute,
   ProfileRoute: ProfileRoute,
+  QuestsRoute: QuestsRoute,
   SignupRoute: SignupRoute,
   StudyRoute: StudyRoute,
   VaultRoute: VaultRoute,
@@ -208,3 +229,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
