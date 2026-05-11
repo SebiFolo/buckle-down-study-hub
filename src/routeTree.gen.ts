@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as VaultRouteImport } from './routes/vault'
 import { Route as StudyRouteImport } from './routes/study'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as ShopRouteImport } from './routes/shop'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as QuestsRouteImport } from './routes/quests'
 import { Route as ProfileRouteImport } from './routes/profile'
@@ -34,6 +35,11 @@ const StudyRoute = StudyRouteImport.update({
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShopRoute = ShopRouteImport.update({
+  id: '/shop',
+  path: '/shop',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/quests': typeof QuestsRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/shop': typeof ShopRoute
   '/signup': typeof SignupRoute
   '/study': typeof StudyRoute
   '/vault': typeof VaultRoute
@@ -99,6 +106,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/quests': typeof QuestsRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/shop': typeof ShopRoute
   '/signup': typeof SignupRoute
   '/study': typeof StudyRoute
   '/vault': typeof VaultRoute
@@ -113,6 +121,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/quests': typeof QuestsRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/shop': typeof ShopRoute
   '/signup': typeof SignupRoute
   '/study': typeof StudyRoute
   '/vault': typeof VaultRoute
@@ -128,6 +137,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/quests'
     | '/reset-password'
+    | '/shop'
     | '/signup'
     | '/study'
     | '/vault'
@@ -141,6 +151,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/quests'
     | '/reset-password'
+    | '/shop'
     | '/signup'
     | '/study'
     | '/vault'
@@ -154,6 +165,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/quests'
     | '/reset-password'
+    | '/shop'
     | '/signup'
     | '/study'
     | '/vault'
@@ -168,6 +180,7 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   QuestsRoute: typeof QuestsRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ShopRoute: typeof ShopRoute
   SignupRoute: typeof SignupRoute
   StudyRoute: typeof StudyRoute
   VaultRoute: typeof VaultRoute
@@ -194,6 +207,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shop': {
+      id: '/shop'
+      path: '/shop'
+      fullPath: '/shop'
+      preLoaderRoute: typeof ShopRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -264,6 +284,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   QuestsRoute: QuestsRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ShopRoute: ShopRoute,
   SignupRoute: SignupRoute,
   StudyRoute: StudyRoute,
   VaultRoute: VaultRoute,

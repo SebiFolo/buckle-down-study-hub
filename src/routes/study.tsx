@@ -16,7 +16,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { awardXp } from "@/lib/xp";
-import { Plus, Sparkles, Layers, ListChecks } from "lucide-react";
+import { fetchInventory, consumeItem } from "@/lib/inventory";
+import { Plus, Sparkles, Layers, ListChecks, Lightbulb, Eye } from "lucide-react";
 
 export const Route = createFileRoute("/study")({ component: StudyPage });
 
