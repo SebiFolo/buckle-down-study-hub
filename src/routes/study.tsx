@@ -266,6 +266,8 @@ function FlashcardPlayer({ setId, onClose }: { setId: string; onClose: () => voi
   const [idx, setIdx] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [done, setDone] = useState(false);
+  const [reveals, setReveals] = useState(0);
+  const [usingReveal, setUsingReveal] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -277,6 +279,7 @@ function FlashcardPlayer({ setId, onClose }: { setId: string; onClose: () => voi
       .then(({ data }) => {
         setCards(data || []);
       });
+    fetchInventory().then((inv) => setReveals(inv["flashcard_reveal"] ?? 0));
   }, [setId]);
 
   const next = async (got: boolean) => {
@@ -288,6 +291,20 @@ function FlashcardPlayer({ setId, onClose }: { setId: string; onClose: () => voi
       setIdx(idx + 1);
     }
     void got;
+  };
+
+  const useReveal = async () => {
+    if (reveals < 1 || usingReveal) return;
+    setUsingReveal(true);
+    const ok = await consumeItem("flashcard_reveal");
+    setUsingReveal(false);
+    if (!ok) {
+      toast.error("Couldn't use reveal");
+      return;
+    }
+    setReveals((r) => r - 1);
+    setFlipped(true);
+    setTimeout(() => next(true), 600);
   };
 
   return (
@@ -308,8 +325,19 @@ function FlashcardPlayer({ setId, onClose }: { setId: string; onClose: () => voi
           </div>
         ) : (
           <>
-            <div className="text-xs text-muted-foreground text-center">
-              Card {idx + 1} of {cards.length}
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>
+                Card {idx + 1} of {cards.length}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={useReveal}
+                disabled={reveals < 1 || usingReveal}
+                title="Auto-reveal current card"
+              >
+                <Eye className="h-3 w-3 mr-1" /> Reveal ({reveals})
+              </Button>
             </div>
             <div
               className="flip-card h-56 mt-2 cursor-pointer"
