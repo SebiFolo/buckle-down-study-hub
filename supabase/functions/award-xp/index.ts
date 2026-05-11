@@ -16,6 +16,8 @@ const ALLOWED_REASONS = new Set([
   "share_summary",
   "daily_streak",
 ]);
+// Reasons that count toward the daily streak
+const STREAK_REASONS = new Set(["quiz", "summary"]);
 const PER_CALL_CAP = 200;
 const DAILY_CAP = 500;
 
@@ -57,7 +59,6 @@ serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Enforce server-side daily cap
     const { data: dailyData } = await admin.rpc("daily_xp_total", { _user_id: userId });
     const todayTotal = Number(dailyData) || 0;
     const remaining = Math.max(0, DAILY_CAP - todayTotal);
@@ -76,13 +77,40 @@ serve(async (req) => {
     let streak = profile.streak_count ?? 0;
     let longest = profile.longest_streak ?? 0;
     let streakBonus = 0;
+    let freezeUsed = false;
 
-    if (last !== today) {
+    // Only quiz/summary actions advance the streak.
+    if (STREAK_REASONS.has(reason) && last !== today) {
       const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
+      yesterday.setUTCDate(yesterday.getUTCDate() - 1);
       const yStr = yesterday.toISOString().slice(0, 10);
-      if (last === yStr) streak += 1;
-      else streak = 1;
+
+      if (last === yStr || !last) {
+        streak = (last === yStr ? streak : 0) + 1;
+      } else {
+        // Gap > 1 day: try to consume a streak freeze
+        const { data: freezeRow } = await admin
+          .from("inventory")
+          .select("quantity")
+          .eq("user_id", userId)
+          .eq("item_key", "streak_freeze")
+          .maybeSingle();
+        if (freezeRow && (freezeRow.quantity ?? 0) > 0) {
+          await admin
+            .from("inventory")
+            .update({
+              quantity: (freezeRow.quantity ?? 0) - 1,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("user_id", userId)
+            .eq("item_key", "streak_freeze");
+          freezeUsed = true;
+          streak = streak + 1;
+        } else {
+          streak = 1;
+        }
+      }
+
       streakBonus = Math.min(10, Math.max(0, DAILY_CAP - todayTotal - xp));
       if (streak > longest) longest = streak;
     }
@@ -91,16 +119,16 @@ serve(async (req) => {
     const oldLevel = profile.level;
     const newLevel = levelFromXp(newXp);
 
-    const { error: upErr } = await admin
-      .from("profiles")
-      .update({
-        xp: newXp,
-        level: newLevel,
-        streak_count: streak,
-        longest_streak: longest,
-        last_active_date: today,
-      })
-      .eq("id", userId);
+    // Only bump last_active_date when a streak-eligible action occurs
+    const updatePayload: Record<string, unknown> = {
+      xp: newXp,
+      level: newLevel,
+      streak_count: streak,
+      longest_streak: longest,
+    };
+    if (STREAK_REASONS.has(reason)) updatePayload.last_active_date = today;
+
+    const { error: upErr } = await admin.from("profiles").update(updatePayload).eq("id", userId);
     if (upErr) {
       console.error("[award-xp] profile update error", upErr);
       return jsonResponse(req, { error: "Internal server error" }, 500);
@@ -119,6 +147,7 @@ serve(async (req) => {
       newLevel,
       leveledUp: newLevel > oldLevel,
       streak,
+      freezeUsed,
     });
   } catch (e) {
     console.error("[award-xp] unexpected error", e);

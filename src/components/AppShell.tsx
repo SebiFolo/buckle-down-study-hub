@@ -8,6 +8,7 @@ import {
   LogOut,
   Target,
   ArrowLeft,
+  Store,
 } from "lucide-react";
 import { BuckLogo } from "./BuckLogo";
 import { NotificationsBell } from "./NotificationsBell";
@@ -21,6 +22,7 @@ const NAV = [
   { to: "/vault", label: "Vault", icon: FolderOpen },
   { to: "/study", label: "Study", icon: BookOpen },
   { to: "/quests", label: "Quests", icon: Target },
+  { to: "/shop", label: "Shop", icon: Store },
   { to: "/friends", label: "Friends", icon: Users },
   { to: "/profile", label: "Profile", icon: User },
 ] as const;

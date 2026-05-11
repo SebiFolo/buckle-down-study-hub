@@ -16,7 +16,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { awardXp } from "@/lib/xp";
-import { Plus, Sparkles, Layers, ListChecks } from "lucide-react";
+import { fetchInventory, consumeItem } from "@/lib/inventory";
+import { Plus, Sparkles, Layers, ListChecks, Lightbulb, Eye } from "lucide-react";
 
 export const Route = createFileRoute("/study")({ component: StudyPage });
 
@@ -24,7 +25,7 @@ interface DocLite {
   id: string;
   title: string;
 }
-interface Set {
+interface FlashSet {
   id: string;
   title: string;
   created_at: string;
@@ -39,7 +40,7 @@ function StudyPage() {
   const { user, loading } = useAuth();
   const nav = useNavigate();
   const [docs, setDocs] = useState<DocLite[]>([]);
-  const [sets, setSets] = useState<Set[]>([]);
+  const [sets, setSets] = useState<FlashSet[]>([]);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [openSet, setOpenSet] = useState<string | null>(null);
   const [openQuiz, setOpenQuiz] = useState<string | null>(null);
@@ -61,7 +62,7 @@ function StudyPage() {
         .order("created_at", { ascending: false }),
     ]);
     setDocs((d.data as DocLite[]) || []);
-    setSets((s.data as Set[]) || []);
+    setSets((s.data as FlashSet[]) || []);
     setQuizzes((q.data as Quiz[]) || []);
   };
   useEffect(() => {
@@ -265,6 +266,8 @@ function FlashcardPlayer({ setId, onClose }: { setId: string; onClose: () => voi
   const [idx, setIdx] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [done, setDone] = useState(false);
+  const [reveals, setReveals] = useState(0);
+  const [usingReveal, setUsingReveal] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -276,6 +279,7 @@ function FlashcardPlayer({ setId, onClose }: { setId: string; onClose: () => voi
       .then(({ data }) => {
         setCards(data || []);
       });
+    fetchInventory().then((inv) => setReveals(inv["flashcard_reveal"] ?? 0));
   }, [setId]);
 
   const next = async (got: boolean) => {
@@ -287,6 +291,20 @@ function FlashcardPlayer({ setId, onClose }: { setId: string; onClose: () => voi
       setIdx(idx + 1);
     }
     void got;
+  };
+
+  const useReveal = async () => {
+    if (reveals < 1 || usingReveal) return;
+    setUsingReveal(true);
+    const ok = await consumeItem("flashcard_reveal");
+    setUsingReveal(false);
+    if (!ok) {
+      toast.error("Couldn't use reveal");
+      return;
+    }
+    setReveals((r) => r - 1);
+    setFlipped(true);
+    setTimeout(() => next(true), 600);
   };
 
   return (
@@ -307,8 +325,19 @@ function FlashcardPlayer({ setId, onClose }: { setId: string; onClose: () => voi
           </div>
         ) : (
           <>
-            <div className="text-xs text-muted-foreground text-center">
-              Card {idx + 1} of {cards.length}
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>
+                Card {idx + 1} of {cards.length}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={useReveal}
+                disabled={reveals < 1 || usingReveal}
+                title="Auto-reveal current card"
+              >
+                <Eye className="h-3 w-3 mr-1" /> Reveal ({reveals})
+              </Button>
             </div>
             <div
               className="flip-card h-56 mt-2 cursor-pointer"
@@ -356,6 +385,9 @@ function QuizPlayer({
   const [confirmed, setConfirmed] = useState(false);
   const [score, setScore] = useState(0);
   const [done, setDone] = useState(false);
+  const [hints, setHints] = useState(0);
+  const [eliminated, setEliminated] = useState<Set<string>>(new Set());
+  const [usingHint, setUsingHint] = useState(false);
 
   useEffect(() => {
     supabase
@@ -373,11 +405,34 @@ function QuizPlayer({
           })),
         );
       });
+    fetchInventory().then((inv) => setHints(inv["quiz_hint"] ?? 0));
   }, [quizId]);
 
   const choose = (opt: string) => {
-    if (confirmed) return;
+    if (confirmed || eliminated.has(opt)) return;
     setPicked(opt);
+  };
+
+  const useHint = async () => {
+    if (hints < 1 || usingHint || confirmed) return;
+    const q = qs[idx];
+    const wrongs = q.options.filter((o) => o !== q.correct_answer && !eliminated.has(o));
+    if (wrongs.length === 0) return;
+    setUsingHint(true);
+    const ok = await consumeItem("quiz_hint");
+    setUsingHint(false);
+    if (!ok) {
+      toast.error("Couldn't use hint");
+      return;
+    }
+    const drop = wrongs[Math.floor(Math.random() * wrongs.length)];
+    setEliminated((prev) => {
+      const next = new Set(prev);
+      next.add(drop);
+      return next;
+    });
+    if (picked === drop) setPicked(null);
+    setHints((h) => h - 1);
   };
 
   const confirm = () => {
@@ -399,6 +454,7 @@ function QuizPlayer({
       setIdx(idx + 1);
       setPicked(null);
       setConfirmed(false);
+      setEliminated(new Set());
     }
   };
 
@@ -425,8 +481,19 @@ function QuizPlayer({
           </div>
         ) : (
           <>
-            <div className="text-xs text-muted-foreground">
-              Question {idx + 1} of {qs.length}
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>
+                Question {idx + 1} of {qs.length}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={useHint}
+                disabled={hints < 1 || usingHint || confirmed}
+                title="Remove a wrong answer"
+              >
+                <Lightbulb className="h-3 w-3 mr-1" /> Hint ({hints})
+              </Button>
             </div>
             <p className="font-medium mt-2">{qs[idx].question_text}</p>
             <div className="space-y-2 mt-4">
@@ -434,6 +501,7 @@ function QuizPlayer({
                 const correct = opt === qs[idx].correct_answer;
                 const showColors = confirmed;
                 const isPicked = picked === opt;
+                const isEliminated = eliminated.has(opt);
                 let cls = "border-border";
                 if (showColors && correct) cls = "border-success bg-success/30";
                 else if (showColors && isPicked && !correct)
@@ -442,8 +510,10 @@ function QuizPlayer({
                   <button
                     key={opt}
                     onClick={() => choose(opt)}
-                    disabled={confirmed}
-                    className={`w-full text-left p-3 rounded-lg border-2 transition ${cls} hover:border-primary disabled:cursor-default`}
+                    disabled={confirmed || isEliminated}
+                    className={`w-full text-left p-3 rounded-lg border-2 transition ${cls} hover:border-primary disabled:cursor-default ${
+                      isEliminated ? "opacity-30 line-through" : ""
+                    }`}
                   >
                     {opt}
                   </button>

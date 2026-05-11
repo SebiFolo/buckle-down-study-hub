@@ -138,9 +138,35 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory: {
+        Row: {
+          id: string
+          item_key: string
+          quantity: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          item_key: string
+          quantity?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          item_key?: string
+          quantity?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
+          avatar_key: string | null
           avatar_url: string | null
+          coins: number
           created_at: string
           id: string
           last_active_date: string | null
@@ -151,7 +177,9 @@ export type Database = {
           xp: number
         }
         Insert: {
+          avatar_key?: string | null
           avatar_url?: string | null
+          coins?: number
           created_at?: string
           id: string
           last_active_date?: string | null
@@ -162,7 +190,9 @@ export type Database = {
           xp?: number
         }
         Update: {
+          avatar_key?: string | null
           avatar_url?: string | null
+          coins?: number
           created_at?: string
           id?: string
           last_active_date?: string | null
@@ -171,6 +201,30 @@ export type Database = {
           streak_count?: number
           username?: string
           xp?: number
+        }
+        Relationships: []
+      }
+      quest_claims: {
+        Row: {
+          claimed_at: string
+          id: string
+          period_key: string
+          quest_key: string
+          user_id: string
+        }
+        Insert: {
+          claimed_at?: string
+          id?: string
+          period_key: string
+          quest_key: string
+          user_id: string
+        }
+        Update: {
+          claimed_at?: string
+          id?: string
+          period_key?: string
+          quest_key?: string
+          user_id?: string
         }
         Relationships: []
       }
