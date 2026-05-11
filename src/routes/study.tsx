@@ -481,8 +481,19 @@ function QuizPlayer({
           </div>
         ) : (
           <>
-            <div className="text-xs text-muted-foreground">
-              Question {idx + 1} of {qs.length}
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>
+                Question {idx + 1} of {qs.length}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={useHint}
+                disabled={hints < 1 || usingHint || confirmed}
+                title="Remove a wrong answer"
+              >
+                <Lightbulb className="h-3 w-3 mr-1" /> Hint ({hints})
+              </Button>
             </div>
             <p className="font-medium mt-2">{qs[idx].question_text}</p>
             <div className="space-y-2 mt-4">
@@ -490,6 +501,7 @@ function QuizPlayer({
                 const correct = opt === qs[idx].correct_answer;
                 const showColors = confirmed;
                 const isPicked = picked === opt;
+                const isEliminated = eliminated.has(opt);
                 let cls = "border-border";
                 if (showColors && correct) cls = "border-success bg-success/30";
                 else if (showColors && isPicked && !correct)
@@ -498,8 +510,10 @@ function QuizPlayer({
                   <button
                     key={opt}
                     onClick={() => choose(opt)}
-                    disabled={confirmed}
-                    className={`w-full text-left p-3 rounded-lg border-2 transition ${cls} hover:border-primary disabled:cursor-default`}
+                    disabled={confirmed || isEliminated}
+                    className={`w-full text-left p-3 rounded-lg border-2 transition ${cls} hover:border-primary disabled:cursor-default ${
+                      isEliminated ? "opacity-30 line-through" : ""
+                    }`}
                   >
                     {opt}
                   </button>
