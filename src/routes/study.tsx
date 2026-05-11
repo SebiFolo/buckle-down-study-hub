@@ -25,7 +25,7 @@ interface DocLite {
   id: string;
   title: string;
 }
-interface Set {
+interface FlashSet {
   id: string;
   title: string;
   created_at: string;
@@ -40,7 +40,7 @@ function StudyPage() {
   const { user, loading } = useAuth();
   const nav = useNavigate();
   const [docs, setDocs] = useState<DocLite[]>([]);
-  const [sets, setSets] = useState<Set[]>([]);
+  const [sets, setSets] = useState<FlashSet[]>([]);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [openSet, setOpenSet] = useState<string | null>(null);
   const [openQuiz, setOpenQuiz] = useState<string | null>(null);
@@ -62,7 +62,7 @@ function StudyPage() {
         .order("created_at", { ascending: false }),
     ]);
     setDocs((d.data as DocLite[]) || []);
-    setSets((s.data as Set[]) || []);
+    setSets((s.data as FlashSet[]) || []);
     setQuizzes((q.data as Quiz[]) || []);
   };
   useEffect(() => {
