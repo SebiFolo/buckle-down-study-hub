@@ -385,6 +385,9 @@ function QuizPlayer({
   const [confirmed, setConfirmed] = useState(false);
   const [score, setScore] = useState(0);
   const [done, setDone] = useState(false);
+  const [hints, setHints] = useState(0);
+  const [eliminated, setEliminated] = useState<Set<string>>(new Set());
+  const [usingHint, setUsingHint] = useState(false);
 
   useEffect(() => {
     supabase
@@ -402,11 +405,34 @@ function QuizPlayer({
           })),
         );
       });
+    fetchInventory().then((inv) => setHints(inv["quiz_hint"] ?? 0));
   }, [quizId]);
 
   const choose = (opt: string) => {
-    if (confirmed) return;
+    if (confirmed || eliminated.has(opt)) return;
     setPicked(opt);
+  };
+
+  const useHint = async () => {
+    if (hints < 1 || usingHint || confirmed) return;
+    const q = qs[idx];
+    const wrongs = q.options.filter((o) => o !== q.correct_answer && !eliminated.has(o));
+    if (wrongs.length === 0) return;
+    setUsingHint(true);
+    const ok = await consumeItem("quiz_hint");
+    setUsingHint(false);
+    if (!ok) {
+      toast.error("Couldn't use hint");
+      return;
+    }
+    const drop = wrongs[Math.floor(Math.random() * wrongs.length)];
+    setEliminated((prev) => {
+      const next = new Set(prev);
+      next.add(drop);
+      return next;
+    });
+    if (picked === drop) setPicked(null);
+    setHints((h) => h - 1);
   };
 
   const confirm = () => {
@@ -428,6 +454,7 @@ function QuizPlayer({
       setIdx(idx + 1);
       setPicked(null);
       setConfirmed(false);
+      setEliminated(new Set());
     }
   };
 
