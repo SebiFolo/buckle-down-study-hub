@@ -36,9 +36,14 @@ serve(async (req) => {
         ],
       }),
     });
-    if (r.status === 429) return json({ error: "Rate limit, try again in a moment." }, 429);
+    if (r.status === 429)
+      return jsonResponse(req, { error: "Rate limit, try again in a moment." }, 429);
     if (r.status === 402)
-      return json({ error: "AI credits exhausted. Add funds in Workspace settings." }, 402);
+      return jsonResponse(
+        req,
+        { error: "AI credits exhausted. Add funds in Workspace settings." },
+        402,
+      );
     if (!r.ok) {
       console.error("[generate-summary] AI error", r.status, await r.text());
       return jsonResponse(req, { error: "AI service error" }, 500);
@@ -52,10 +57,3 @@ serve(async (req) => {
     return jsonResponse(req, { error: "Internal server error" }, 500);
   }
 });
-
-function json(b: unknown, status = 200) {
-  return new Response(JSON.stringify(b), {
-    status,
-    headers: { ...cors, "Content-Type": "application/json" },
-  });
-}
