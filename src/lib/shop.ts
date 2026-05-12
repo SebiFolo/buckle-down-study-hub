@@ -27,13 +27,6 @@ export const SHOP_ITEMS: ShopItem[] = [
     cost: 25,
     icon: Lightbulb,
   },
-  {
-    key: "flashcard_reveal",
-    name: "Flashcard Reveal",
-    description: "Auto-flips and marks the current flashcard as 'got it'. Single use.",
-    cost: 15,
-    icon: Eye,
-  },
 ];
 
 export function getShopItem(key: string): ShopItem | undefined {
