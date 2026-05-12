@@ -117,6 +117,7 @@ function MyFriendsTab() {
       streak_count: number;
       id: string;
       avatar_url: string | null;
+      avatar_key: string | null;
     };
     relationship: { status: string } | null;
   }
