@@ -433,6 +433,7 @@ function QuizPlayer({
       setPicked(null);
       setConfirmed(false);
       setEliminated(new Set());
+      setHintMessage(null);
     }
   };
 
