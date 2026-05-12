@@ -308,19 +308,8 @@ function FlashcardPlayer({ setId, onClose }: { setId: string; onClose: () => voi
           </div>
         ) : (
           <>
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>
-                Card {idx + 1} of {cards.length}
-              </span>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={useReveal}
-                disabled={reveals < 1 || usingReveal}
-                title="Auto-reveal current card"
-              >
-                <Eye className="h-3 w-3 mr-1" /> Reveal ({reveals})
-              </Button>
+            <div className="text-xs text-muted-foreground">
+              Card {idx + 1} of {cards.length}
             </div>
             <div
               className="flip-card h-56 mt-2 cursor-pointer"
