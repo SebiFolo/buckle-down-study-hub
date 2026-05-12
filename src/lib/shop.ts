@@ -1,4 +1,4 @@
-import { Snowflake, Lightbulb, Eye } from "lucide-react";
+import { Snowflake, Lightbulb } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 export interface ShopItem {
