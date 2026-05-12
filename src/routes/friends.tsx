@@ -302,6 +302,17 @@ function RequestsTab() {
   };
   useEffect(() => {
     refresh();
+    const ch = supabase
+      .channel("friends-requests")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "friends" },
+        () => refresh(),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
   }, []);
 
   const accept = async (id: string) => {
