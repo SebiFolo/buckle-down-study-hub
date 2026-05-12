@@ -475,6 +475,11 @@ function QuizPlayer({
               </Button>
             </div>
             <p className="font-medium mt-2">{qs[idx].question_text}</p>
+            {hintMessage && (
+              <div className="mt-3 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-sm text-primary">
+                {hintMessage}
+              </div>
+            )}
             <div className="space-y-2 mt-4">
               {qs[idx].options.map((opt) => {
                 const correct = opt === qs[idx].correct_answer;
@@ -485,6 +490,7 @@ function QuizPlayer({
                 if (showColors && correct) cls = "border-success bg-success/30";
                 else if (showColors && isPicked && !correct)
                   cls = "border-destructive bg-destructive/10";
+                else if (!showColors && isPicked) cls = "border-primary bg-primary/15";
                 return (
                   <button
                     key={opt}
