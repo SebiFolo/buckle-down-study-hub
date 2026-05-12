@@ -134,7 +134,6 @@ export function NotificationsBell() {
             >
               <Link
                 to="/friends"
-                search={{ tab: "requests" }}
                 onClick={() => setOpen(false)}
                 className="flex-1 min-w-0"
               >
