@@ -205,9 +205,11 @@ function MyFriendsTab() {
 
       {result && (
         <div className="buck-card p-4 mt-3 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center text-primary font-semibold">
-            {(result.user.username as string)[0]?.toUpperCase()}
-          </div>
+          <img
+            src={avatarSrc(result.user.avatar_key as string | null)}
+            alt={result.user.username as string}
+            className="h-10 w-10 rounded-full object-cover bg-accent"
+          />
           <div className="flex-1 min-w-0">
             <div className="font-semibold">{result.user.username as string}</div>
             <div className="text-xs text-muted-foreground">
