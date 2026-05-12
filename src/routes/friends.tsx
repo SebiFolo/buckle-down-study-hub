@@ -132,6 +132,22 @@ function MyFriendsTab() {
   };
   useEffect(() => {
     refresh();
+    const ch = supabase
+      .channel("friends-list")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "friends" },
+        () => refresh(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "profiles" },
+        () => refresh(),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
   }, []);
 
   const search = async () => {
