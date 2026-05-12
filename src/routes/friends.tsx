@@ -34,6 +34,7 @@ interface Friend {
   friendRowId: string;
   username: string;
   avatar_url: string | null;
+  avatar_key: string | null;
   level: number;
   xp: number;
   streak_count: number;
@@ -43,13 +44,15 @@ interface ReqRow {
   friendRowId: string;
   id: string;
   username: string;
+  avatar_url: string | null;
+  avatar_key: string | null;
   level: number;
   streak_count: number;
 }
 interface SharedRecv {
   id: string;
   created_at: string;
-  sharedBy: { username: string; avatar_url: string | null } | null;
+  sharedBy: { username: string; avatar_url: string | null; avatar_key: string | null } | null;
   document: { title: string; summary: string; file_type: string } | null;
 }
 interface SharedSent {
