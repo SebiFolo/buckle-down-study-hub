@@ -128,17 +128,28 @@ export function NotificationsBell() {
             </div>
           )}
           {visibleIncoming.map((r) => (
-            <div key={r.friendRowId} className="p-3 border-b border-border flex items-center gap-2">
-              <div className="flex-1 min-w-0">
+            <div
+              key={r.friendRowId}
+              className="p-3 border-b border-border flex items-center gap-2 hover:bg-accent/30 transition"
+            >
+              <Link
+                to="/friends"
+                onClick={() => setOpen(false)}
+                className="flex-1 min-w-0"
+              >
                 <div className="text-sm">
                   <span className="font-medium">{r.username}</span> wants to be friends
                 </div>
                 <div className="text-xs text-muted-foreground">Level {r.level}</div>
-              </div>
+              </Link>
               <Button
                 size="icon"
                 variant="ghost"
-                onClick={() => accept(r.friendRowId)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  accept(r.friendRowId);
+                }}
                 aria-label="Accept"
               >
                 <Check className="h-4 w-4 text-success" />
@@ -146,7 +157,11 @@ export function NotificationsBell() {
               <Button
                 size="icon"
                 variant="ghost"
-                onClick={() => reject(r.friendRowId)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  reject(r.friendRowId);
+                }}
                 aria-label="Reject"
               >
                 <X className="h-4 w-4" />
