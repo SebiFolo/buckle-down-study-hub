@@ -246,9 +246,7 @@ function QuestColumn({
                   >
                     {claiming === q.key ? (
                       <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                    ) : (
-                      <Sparkles className="h-3 w-3 mr-1" />
-                    )}
+                    ) : null}
                     Claim reward
                   </Button>
                 ) : (
