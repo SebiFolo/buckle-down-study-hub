@@ -406,6 +406,11 @@ function QuizPlayer({
     });
     if (picked === drop) setPicked(null);
     setHints((h) => h - 1);
+    const correct = q.correct_answer;
+    const firstLetter = correct.trim().charAt(0).toUpperCase();
+    setHintMessage(
+      `💡 Hint: One wrong answer was removed. The correct answer starts with "${firstLetter}".`,
+    );
   };
 
   const confirm = () => {
