@@ -24,6 +24,8 @@ import {
 } from "lucide-react";
 import { BuckLogo } from "@/components/BuckLogo";
 import { stripMarkup } from "@/lib/utils";
+import { avatarSrc } from "@/lib/avatars";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/friends")({ component: FriendsPage });
 
