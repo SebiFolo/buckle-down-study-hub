@@ -356,9 +356,11 @@ function RequestsTab() {
           <div className="space-y-2">
             {incoming.map((r) => (
               <div key={r.friendRowId} className="buck-card p-3 flex items-center gap-3">
-                <div className="h-9 w-9 rounded-full bg-accent flex items-center justify-center text-primary font-semibold">
-                  {r.username[0]?.toUpperCase()}
-                </div>
+                <img
+                  src={avatarSrc(r.avatar_key)}
+                  alt={r.username}
+                  className="h-9 w-9 rounded-full object-cover bg-accent"
+                />
                 <div className="flex-1 min-w-0">
                   <div className="font-medium truncate">{r.username}</div>
                   <div className="text-xs text-muted-foreground">
