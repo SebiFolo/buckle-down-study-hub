@@ -360,6 +360,7 @@ function QuizPlayer({
   const [hints, setHints] = useState(0);
   const [eliminated, setEliminated] = useState<Set<string>>(new Set());
   const [usingHint, setUsingHint] = useState(false);
+  const [hintMessage, setHintMessage] = useState<string | null>(null);
 
   useEffect(() => {
     supabase
