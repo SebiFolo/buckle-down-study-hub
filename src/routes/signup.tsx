@@ -102,6 +102,9 @@ function SignupPage() {
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 required
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                Must be 8+ characters with uppercase, lowercase, number, and special character.
+              </p>
             </div>
             <div>
               <Label htmlFor="confirm">Confirm password</Label>
