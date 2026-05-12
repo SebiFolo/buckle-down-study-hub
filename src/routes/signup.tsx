@@ -39,7 +39,10 @@ function SignupPage() {
     e.preventDefault();
     if (form.password !== form.confirm) return toast.error("Passwords don't match");
     const parsed = schema.safeParse(form);
-    if (!parsed.success) return toast.error(parsed.error.issues[0].message);
+    if (!parsed.success) {
+      parsed.error.issues.forEach((iss) => toast.error(iss.message));
+      return;
+    }
 
     setLoading(true);
     const { error } = await supabase.auth.signUp({
