@@ -24,6 +24,8 @@ import {
 } from "lucide-react";
 import { BuckLogo } from "@/components/BuckLogo";
 import { stripMarkup } from "@/lib/utils";
+import { avatarSrc } from "@/lib/avatars";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/friends")({ component: FriendsPage });
 
@@ -32,6 +34,7 @@ interface Friend {
   friendRowId: string;
   username: string;
   avatar_url: string | null;
+  avatar_key: string | null;
   level: number;
   xp: number;
   streak_count: number;
@@ -41,13 +44,15 @@ interface ReqRow {
   friendRowId: string;
   id: string;
   username: string;
+  avatar_url: string | null;
+  avatar_key: string | null;
   level: number;
   streak_count: number;
 }
 interface SharedRecv {
   id: string;
   created_at: string;
-  sharedBy: { username: string; avatar_url: string | null } | null;
+  sharedBy: { username: string; avatar_url: string | null; avatar_key: string | null } | null;
   document: { title: string; summary: string; file_type: string } | null;
 }
 interface SharedSent {
@@ -112,6 +117,7 @@ function MyFriendsTab() {
       streak_count: number;
       id: string;
       avatar_url: string | null;
+      avatar_key: string | null;
     };
     relationship: { status: string } | null;
   }
@@ -127,6 +133,22 @@ function MyFriendsTab() {
   };
   useEffect(() => {
     refresh();
+    const ch = supabase
+      .channel("friends-list")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "friends" },
+        () => refresh(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "profiles" },
+        () => refresh(),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
   }, []);
 
   const search = async () => {
@@ -184,9 +206,11 @@ function MyFriendsTab() {
 
       {result && (
         <div className="buck-card p-4 mt-3 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center text-primary font-semibold">
-            {(result.user.username as string)[0]?.toUpperCase()}
-          </div>
+          <img
+            src={avatarSrc(result.user.avatar_key as string | null)}
+            alt={result.user.username as string}
+            className="h-10 w-10 rounded-full object-cover bg-accent"
+          />
           <div className="flex-1 min-w-0">
             <div className="font-semibold">{result.user.username as string}</div>
             <div className="text-xs text-muted-foreground">
@@ -219,9 +243,11 @@ function MyFriendsTab() {
           friends.map((f) => (
             <div key={f.id} className="buck-card p-4">
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-accent ring-2 ring-secondary flex items-center justify-center text-primary font-bold text-lg">
-                  {f.username[0]?.toUpperCase()}
-                </div>
+                <img
+                  src={avatarSrc(f.avatar_key)}
+                  alt={f.username}
+                  className="h-12 w-12 rounded-full object-cover bg-accent ring-2 ring-secondary"
+                />
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold truncate">{f.username}</div>
                   <div className="text-xs text-muted-foreground">
@@ -276,6 +302,17 @@ function RequestsTab() {
   };
   useEffect(() => {
     refresh();
+    const ch = supabase
+      .channel("friends-requests")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "friends" },
+        () => refresh(),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
   }, []);
 
   const accept = async (id: string) => {
@@ -319,9 +356,11 @@ function RequestsTab() {
           <div className="space-y-2">
             {incoming.map((r) => (
               <div key={r.friendRowId} className="buck-card p-3 flex items-center gap-3">
-                <div className="h-9 w-9 rounded-full bg-accent flex items-center justify-center text-primary font-semibold">
-                  {r.username[0]?.toUpperCase()}
-                </div>
+                <img
+                  src={avatarSrc(r.avatar_key)}
+                  alt={r.username}
+                  className="h-9 w-9 rounded-full object-cover bg-accent"
+                />
                 <div className="flex-1 min-w-0">
                   <div className="font-medium truncate">{r.username}</div>
                   <div className="text-xs text-muted-foreground">
@@ -347,9 +386,11 @@ function RequestsTab() {
           <div className="space-y-2">
             {outgoing.map((r) => (
               <div key={r.friendRowId} className="buck-card p-3 flex items-center gap-3">
-                <div className="h-9 w-9 rounded-full bg-accent flex items-center justify-center text-primary font-semibold">
-                  {r.username[0]?.toUpperCase()}
-                </div>
+                <img
+                  src={avatarSrc(r.avatar_key)}
+                  alt={r.username}
+                  className="h-9 w-9 rounded-full object-cover bg-accent"
+                />
                 <div className="flex-1 min-w-0">
                   <div className="font-medium truncate">{r.username}</div>
                   <div className="text-xs text-muted-foreground">Pending...</div>

@@ -83,7 +83,7 @@ serve(async (req) => {
 
       let { data: prof } = await admin
         .from("profiles")
-        .select("id, username, avatar_url, level, xp, streak_count")
+        .select("id, username, avatar_url, avatar_key, level, xp, streak_count")
         .ilike("username", identifier)
         .maybeSingle();
 
@@ -95,7 +95,7 @@ serve(async (req) => {
         if (match) {
           const { data: p2 } = await admin
             .from("profiles")
-            .select("id, username, avatar_url, level, xp, streak_count")
+            .select("id, username, avatar_url, avatar_key, level, xp, streak_count")
             .eq("id", match.id)
             .maybeSingle();
           prof = p2;
@@ -188,7 +188,7 @@ serve(async (req) => {
       if (!ids.length) return jsonResponse(req, { friends: [] });
       const { data: profs } = await admin
         .from("profiles")
-        .select("id, username, avatar_url, level, xp, streak_count, last_active_date")
+        .select("id, username, avatar_url, avatar_key, level, xp, streak_count, last_active_date")
         .in("id", ids);
       const byId = new Map((profs || []).map((p: { id: string }) => [p.id, p]));
       const friends = (rows || [])
@@ -210,7 +210,7 @@ serve(async (req) => {
       const { data: profs } = ids.length
         ? await admin
             .from("profiles")
-            .select("id, username, avatar_url, level, streak_count")
+            .select("id, username, avatar_url, avatar_key, level, streak_count")
             .in("id", ids)
         : { data: [] };
       const byId = new Map((profs || []).map((p: { id: string }) => [p.id, p]));
@@ -235,7 +235,7 @@ serve(async (req) => {
       const { data: profs } = ids.length
         ? await admin
             .from("profiles")
-            .select("id, username, avatar_url, level, streak_count")
+            .select("id, username, avatar_url, avatar_key, level, streak_count")
             .in("id", ids)
         : { data: [] };
       const byId = new Map((profs || []).map((p: { id: string }) => [p.id, p]));
@@ -326,7 +326,7 @@ serve(async (req) => {
         new Set((rows || []).map((r: { shared_by_user_id: string }) => r.shared_by_user_id)),
       );
       const { data: profs } = ids.length
-        ? await admin.from("profiles").select("id, username, avatar_url").in("id", ids)
+        ? await admin.from("profiles").select("id, username, avatar_url, avatar_key").in("id", ids)
         : { data: [] };
       const byId = new Map((profs || []).map((p: { id: string }) => [p.id, p]));
       return jsonResponse(req, {
@@ -356,7 +356,7 @@ serve(async (req) => {
         new Set((rows || []).map((r: { shared_with_user_id: string }) => r.shared_with_user_id)),
       );
       const { data: profs } = ids.length
-        ? await admin.from("profiles").select("id, username, avatar_url").in("id", ids)
+        ? await admin.from("profiles").select("id, username, avatar_url, avatar_key").in("id", ids)
         : { data: [] };
       const byId = new Map((profs || []).map((p: { id: string }) => [p.id, p]));
       return jsonResponse(req, {

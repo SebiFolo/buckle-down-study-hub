@@ -1,4 +1,4 @@
-import { Snowflake, Lightbulb, Eye } from "lucide-react";
+import { Snowflake, Lightbulb } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 export interface ShopItem {
@@ -26,13 +26,6 @@ export const SHOP_ITEMS: ShopItem[] = [
     description: "Removes one wrong answer in a quiz question. Single use.",
     cost: 25,
     icon: Lightbulb,
-  },
-  {
-    key: "flashcard_reveal",
-    name: "Flashcard Reveal",
-    description: "Auto-flips and marks the current flashcard as 'got it'. Single use.",
-    cost: 15,
-    icon: Eye,
   },
 ];
 

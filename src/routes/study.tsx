@@ -17,7 +17,7 @@ import {
 import { toast } from "sonner";
 import { awardXp } from "@/lib/xp";
 import { fetchInventory, consumeItem } from "@/lib/inventory";
-import { Plus, Sparkles, Layers, ListChecks, Lightbulb, Eye } from "lucide-react";
+import { Plus, Sparkles, Layers, ListChecks, Lightbulb } from "lucide-react";
 
 export const Route = createFileRoute("/study")({ component: StudyPage });
 
@@ -266,8 +266,6 @@ function FlashcardPlayer({ setId, onClose }: { setId: string; onClose: () => voi
   const [idx, setIdx] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [done, setDone] = useState(false);
-  const [reveals, setReveals] = useState(0);
-  const [usingReveal, setUsingReveal] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -279,7 +277,6 @@ function FlashcardPlayer({ setId, onClose }: { setId: string; onClose: () => voi
       .then(({ data }) => {
         setCards(data || []);
       });
-    fetchInventory().then((inv) => setReveals(inv["flashcard_reveal"] ?? 0));
   }, [setId]);
 
   const next = async (got: boolean) => {
@@ -291,20 +288,6 @@ function FlashcardPlayer({ setId, onClose }: { setId: string; onClose: () => voi
       setIdx(idx + 1);
     }
     void got;
-  };
-
-  const useReveal = async () => {
-    if (reveals < 1 || usingReveal) return;
-    setUsingReveal(true);
-    const ok = await consumeItem("flashcard_reveal");
-    setUsingReveal(false);
-    if (!ok) {
-      toast.error("Couldn't use reveal");
-      return;
-    }
-    setReveals((r) => r - 1);
-    setFlipped(true);
-    setTimeout(() => next(true), 600);
   };
 
   return (
@@ -325,19 +308,8 @@ function FlashcardPlayer({ setId, onClose }: { setId: string; onClose: () => voi
           </div>
         ) : (
           <>
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>
-                Card {idx + 1} of {cards.length}
-              </span>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={useReveal}
-                disabled={reveals < 1 || usingReveal}
-                title="Auto-reveal current card"
-              >
-                <Eye className="h-3 w-3 mr-1" /> Reveal ({reveals})
-              </Button>
+            <div className="text-xs text-muted-foreground">
+              Card {idx + 1} of {cards.length}
             </div>
             <div
               className="flip-card h-56 mt-2 cursor-pointer"
@@ -388,6 +360,7 @@ function QuizPlayer({
   const [hints, setHints] = useState(0);
   const [eliminated, setEliminated] = useState<Set<string>>(new Set());
   const [usingHint, setUsingHint] = useState(false);
+  const [hintMessage, setHintMessage] = useState<string | null>(null);
 
   useEffect(() => {
     supabase
@@ -433,6 +406,11 @@ function QuizPlayer({
     });
     if (picked === drop) setPicked(null);
     setHints((h) => h - 1);
+    const correct = q.correct_answer;
+    const firstLetter = correct.trim().charAt(0).toUpperCase();
+    setHintMessage(
+      `💡 Hint: One wrong answer was removed. The correct answer starts with "${firstLetter}".`,
+    );
   };
 
   const confirm = () => {
@@ -455,6 +433,7 @@ function QuizPlayer({
       setPicked(null);
       setConfirmed(false);
       setEliminated(new Set());
+      setHintMessage(null);
     }
   };
 
@@ -496,6 +475,11 @@ function QuizPlayer({
               </Button>
             </div>
             <p className="font-medium mt-2">{qs[idx].question_text}</p>
+            {hintMessage && (
+              <div className="mt-3 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-sm text-primary">
+                {hintMessage}
+              </div>
+            )}
             <div className="space-y-2 mt-4">
               {qs[idx].options.map((opt) => {
                 const correct = opt === qs[idx].correct_answer;
@@ -506,6 +490,7 @@ function QuizPlayer({
                 if (showColors && correct) cls = "border-success bg-success/30";
                 else if (showColors && isPicked && !correct)
                   cls = "border-destructive bg-destructive/10";
+                else if (!showColors && isPicked) cls = "border-primary bg-primary/15";
                 return (
                   <button
                     key={opt}

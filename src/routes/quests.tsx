@@ -4,7 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Target, Loader2, Coins, Sparkles, ArrowRight, Check } from "lucide-react";
+import { Target, Loader2, Coins, ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { QUESTS, periodKey, periodStartIso, type QuestDef } from "@/lib/quests";
@@ -246,9 +246,7 @@ function QuestColumn({
                   >
                     {claiming === q.key ? (
                       <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                    ) : (
-                      <Sparkles className="h-3 w-3 mr-1" />
-                    )}
+                    ) : null}
                     Claim reward
                   </Button>
                 ) : (

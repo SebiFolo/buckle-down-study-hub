@@ -20,7 +20,14 @@ const schema = z.object({
     .max(30)
     .regex(/^[a-zA-Z0-9_]+$/, "Letters, numbers, underscore only"),
   email: z.string().trim().email("Invalid email").max(255),
-  password: z.string().min(8, "At least 8 characters").max(72),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .max(72, "Password must be at most 72 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number")
+    .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character"),
 });
 
 function SignupPage() {
@@ -32,7 +39,10 @@ function SignupPage() {
     e.preventDefault();
     if (form.password !== form.confirm) return toast.error("Passwords don't match");
     const parsed = schema.safeParse(form);
-    if (!parsed.success) return toast.error(parsed.error.issues[0].message);
+    if (!parsed.success) {
+      parsed.error.issues.forEach((iss) => toast.error(iss.message));
+      return;
+    }
 
     setLoading(true);
     const { error } = await supabase.auth.signUp({
@@ -95,6 +105,9 @@ function SignupPage() {
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 required
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                Must be 8+ characters with uppercase, lowercase, number, and special character.
+              </p>
             </div>
             <div>
               <Label htmlFor="confirm">Confirm password</Label>
