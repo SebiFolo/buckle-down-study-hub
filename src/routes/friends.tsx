@@ -243,9 +243,11 @@ function MyFriendsTab() {
           friends.map((f) => (
             <div key={f.id} className="buck-card p-4">
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-accent ring-2 ring-secondary flex items-center justify-center text-primary font-bold text-lg">
-                  {f.username[0]?.toUpperCase()}
-                </div>
+                <img
+                  src={avatarSrc(f.avatar_key)}
+                  alt={f.username}
+                  className="h-12 w-12 rounded-full object-cover bg-accent ring-2 ring-secondary"
+                />
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold truncate">{f.username}</div>
                   <div className="text-xs text-muted-foreground">
