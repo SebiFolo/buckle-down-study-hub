@@ -103,7 +103,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="flex-1 pb-20 md:pb-6 min-w-0">
+      <main key={loc.pathname} className="flex-1 pb-20 md:pb-6 min-w-0 animate-in fade-in slide-in-from-bottom-2 duration-300">
         {/* Desktop back arrow */}
         {!isTopLevel && (
           <div className="hidden md:flex px-4 md:px-8 pt-4">

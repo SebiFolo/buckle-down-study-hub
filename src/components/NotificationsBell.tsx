@@ -97,9 +97,12 @@ export function NotificationsBell() {
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
           {count > 0 && (
-            <span className="absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
-              {count}
-            </span>
+            <>
+              <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive animate-ping opacity-60" />
+              <span className="absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
+                {count}
+              </span>
+            </>
           )}
         </Button>
       </PopoverTrigger>
@@ -174,8 +177,8 @@ export function NotificationsBell() {
               className="p-3 border-b border-border flex items-center gap-2 hover:bg-accent/30 transition"
             >
               <Link
-                to="/friends"
-                onClick={() => setOpen(false)}
+                to="/vault"
+                onClick={() => { dismiss(`share:${s.id}`); setOpen(false); }}
                 className="flex-1 flex items-center gap-2 min-w-0"
               >
                 <FileText className="h-4 w-4 text-primary shrink-0" />

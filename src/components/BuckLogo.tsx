@@ -7,27 +7,37 @@ export function BuckLogo({ className = "h-8 w-8" }: { className?: string }) {
       xmlns="http://www.w3.org/2000/svg"
       aria-label="Buckle Down"
     >
-      {/* Antlers */}
+      <defs>
+        <linearGradient id="buckHeadGrad" x1="32" y1="14" x2="32" y2="54" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="1" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0.75" />
+        </linearGradient>
+      </defs>
+      {/* Left antler — main stem + two branches */}
       <path
-        d="M20 18c-3-4-6-6-9-6 1 4 3 6 5 7-3 0-5 1-7 3 4 1 7 1 10 0M44 18c3-4 6-6 9-6-1 4-3 6-5 7 3 0 5 1 7 3-4 1-7 1-10 0"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M23 22 L19 12 M19 12 L15 7 M19 12 L23 9 M19 12 L17 16"
+        stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
       />
+      {/* Right antler */}
+      <path
+        d="M41 22 L45 12 M45 12 L49 7 M45 12 L41 9 M45 12 L47 16"
+        stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+      />
+      {/* Ears */}
+      <ellipse cx="20" cy="24" rx="4" ry="5.5" fill="currentColor" opacity="0.85" />
+      <ellipse cx="44" cy="24" rx="4" ry="5.5" fill="currentColor" opacity="0.85" />
       {/* Head */}
-      <path
-        d="M32 16c-8 0-14 6-14 14v6c0 7 6 14 14 14s14-7 14-14v-6c0-8-6-14-14-14z"
-        fill="currentColor"
-        opacity="0.95"
-      />
+      <ellipse cx="32" cy="36" rx="13" ry="14" fill="url(#buckHeadGrad)" />
       {/* Snout */}
-      <ellipse cx="32" cy="44" rx="6" ry="5" fill="var(--color-background)" opacity="0.25" />
+      <ellipse cx="32" cy="44" rx="6.5" ry="5" fill="var(--color-background)" opacity="0.22" />
       {/* Eyes */}
-      <circle cx="26" cy="32" r="1.8" fill="var(--color-background)" />
-      <circle cx="38" cy="32" r="1.8" fill="var(--color-background)" />
+      <circle cx="27" cy="33" r="2" fill="var(--color-background)" />
+      <circle cx="37" cy="33" r="2" fill="var(--color-background)" />
+      {/* Eye highlights */}
+      <circle cx="27.8" cy="32.2" r="0.7" fill="var(--color-background)" opacity="0.6" />
+      <circle cx="37.8" cy="32.2" r="0.7" fill="var(--color-background)" opacity="0.6" />
       {/* Nose */}
-      <ellipse cx="32" cy="42" rx="1.6" ry="1.2" fill="var(--color-background)" />
+      <ellipse cx="32" cy="42" rx="1.8" ry="1.3" fill="var(--color-background)" opacity="0.7" />
     </svg>
   );
 }

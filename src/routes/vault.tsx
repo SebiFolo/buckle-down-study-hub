@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { BuckLogo } from "@/components/BuckLogo";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,7 @@ function VaultPage() {
   const nav = useNavigate();
   const [docs, setDocs] = useState<Doc[]>([]);
   const [busy, setBusy] = useState(false);
+  const [loadingStep, setLoadingStep] = useState("");
   const [gdoc, setGdoc] = useState("");
   const [view, setView] = useState<Doc | null>(null);
   const [shareDoc, setShareDoc] = useState<Doc | null>(null);
@@ -90,6 +92,7 @@ function VaultPage() {
       return toast.error("Unsupported file type");
 
     setBusy(true);
+    setLoadingStep("Reading your document...");
     try {
       const buf = await file.arrayBuffer();
       const bytes = new Uint8Array(buf);
@@ -99,11 +102,11 @@ function VaultPage() {
         binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)));
       }
       const b64 = btoa(binary);
-      toast.info("🦌 Buckle is reading your notes...");
       const { data: ex, error: exErr } = await supabase.functions.invoke("extract-text", {
         body: { fileBase64: b64, fileType: ext, fileName: file.name },
       });
       if (exErr || ex?.error) throw new Error(ex?.error || exErr?.message);
+      setLoadingStep("Generating AI summary...");
       const { data: sum, error: sErr } = await supabase.functions.invoke("generate-summary", {
         body: { text: ex.text, title: file.name },
       });
@@ -136,18 +139,20 @@ function VaultPage() {
       toast.error(error);
     } finally {
       setBusy(false);
+      setLoadingStep("");
     }
   };
 
   const processGdoc = async () => {
     if (!user || !gdoc) return;
     setBusy(true);
+    setLoadingStep("Fetching your Google Doc...");
     try {
-      toast.info("🦌 Fetching your Google Doc...");
       const { data: ex, error: exErr } = await supabase.functions.invoke("extract-text", {
         body: { gdocUrl: gdoc },
       });
       if (exErr || ex?.error) throw new Error(ex?.error || exErr?.message);
+      setLoadingStep("Generating AI summary...");
       const { data: sum, error: sErr } = await supabase.functions.invoke("generate-summary", {
         body: { text: ex.text, title: "Google Doc" },
       });
@@ -169,6 +174,7 @@ function VaultPage() {
       toast.error(error);
     } finally {
       setBusy(false);
+      setLoadingStep("");
     }
   };
 
@@ -273,6 +279,23 @@ function VaultPage() {
             ))
           )}
         </div>
+
+        {busy && (
+          <div className="fixed inset-0 z-50 bg-background/75 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
+            <div className="buck-card p-8 flex flex-col items-center gap-5 max-w-xs w-full mx-4 animate-in zoom-in-95 duration-200">
+              <BuckLogo className="h-16 w-16 text-primary animate-pulse" />
+              <div className="text-center">
+                <p className="font-semibold text-base">Buckle is working...</p>
+                <p className="text-sm text-muted-foreground mt-1">{loadingStep}</p>
+              </div>
+              <div className="flex gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-primary animate-bounce [animation-delay:0ms]" />
+                <span className="h-2 w-2 rounded-full bg-primary animate-bounce [animation-delay:150ms]" />
+                <span className="h-2 w-2 rounded-full bg-primary animate-bounce [animation-delay:300ms]" />
+              </div>
+            </div>
+          </div>
+        )}
 
         <SummaryModal doc={view} onClose={() => setView(null)} />
         <ShareDocumentModal
