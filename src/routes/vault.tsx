@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { ShareDocumentModal } from "@/components/ShareDocumentModal";
 import { stripMarkup } from "@/lib/utils";
+import ReactMarkdown from "react-markdown";
 
 export const Route = createFileRoute("/vault")({ component: VaultPage });
 
@@ -336,8 +337,33 @@ function SummaryModal({ doc, onClose }: { doc: Doc | null; onClose: () => void }
             <Square className="h-3 w-3 mr-1" /> Stop
           </Button>
         </div>
-        <div className="prose prose-sm max-w-none whitespace-pre-wrap text-sm leading-relaxed">
-          {stripMarkup(doc.summary)}
+        <div className="text-sm leading-relaxed">
+          <ReactMarkdown
+            components={{
+              h1: ({ children }) => (
+                <h1 className="text-xl font-bold mt-4 mb-2 first:mt-0">{children}</h1>
+              ),
+              h2: ({ children }) => (
+                <h2 className="text-base font-semibold mt-4 mb-1 text-primary">{children}</h2>
+              ),
+              h3: ({ children }) => (
+                <h3 className="text-sm font-semibold mt-3 mb-1">{children}</h3>
+              ),
+              ul: ({ children }) => (
+                <ul className="list-disc pl-5 my-2 space-y-1">{children}</ul>
+              ),
+              ol: ({ children }) => (
+                <ol className="list-decimal pl-5 my-2 space-y-1">{children}</ol>
+              ),
+              li: ({ children }) => <li>{children}</li>,
+              p: ({ children }) => <p className="my-2">{children}</p>,
+              strong: ({ children }) => (
+                <strong className="font-semibold">{children}</strong>
+              ),
+            }}
+          >
+            {doc.summary ?? ""}
+          </ReactMarkdown>
         </div>
       </DialogContent>
     </Dialog>
