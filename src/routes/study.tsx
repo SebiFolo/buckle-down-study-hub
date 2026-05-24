@@ -390,27 +390,42 @@ function QuizPlayer({
     if (hints < 1 || usingHint || confirmed) return;
     const q = qs[idx];
     const wrongs = q.options.filter((o) => o !== q.correct_answer && !eliminated.has(o));
-    if (wrongs.length === 0) return;
     setUsingHint(true);
     const ok = await consumeItem("quiz_hint");
-    setUsingHint(false);
     if (!ok) {
+      setUsingHint(false);
       toast.error("Couldn't use hint");
       return;
     }
-    const drop = wrongs[Math.floor(Math.random() * wrongs.length)];
-    setEliminated((prev) => {
-      const next = new Set(prev);
-      next.add(drop);
-      return next;
-    });
-    if (picked === drop) setPicked(null);
+    if (wrongs.length > 0) {
+      const drop = wrongs[Math.floor(Math.random() * wrongs.length)];
+      setEliminated((prev) => {
+        const next = new Set(prev);
+        next.add(drop);
+        return next;
+      });
+      if (picked === drop) setPicked(null);
+    }
     setHints((h) => h - 1);
-    const correct = q.correct_answer;
-    const firstLetter = correct.trim().charAt(0).toUpperCase();
-    setHintMessage(
-      `💡 Hint: One wrong answer was removed. The correct answer starts with "${firstLetter}".`,
-    );
+    let hintText = "One wrong answer was removed.";
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-hint", {
+        body: {
+          question: q.question_text,
+          options: q.options,
+          correct: q.correct_answer,
+        },
+      });
+      if (!error && data?.hint) {
+        hintText = `${data.hint}${wrongs.length > 0 ? " (One wrong answer was also removed.)" : ""}`;
+      } else if (data?.error) {
+        toast.error(data.error);
+      }
+    } catch (e) {
+      console.error("hint error", e);
+    }
+    setHintMessage(`💡 ${hintText}`);
+    setUsingHint(false);
   };
 
   const confirm = () => {
