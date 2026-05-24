@@ -6,28 +6,10 @@ import { Label } from "@/components/ui/label";
 import { BuckLogo } from "@/components/BuckLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { z } from "zod";
+import { signupSchema } from "@/lib/auth-schema";
 
 export const Route = createFileRoute("/signup")({
   component: SignupPage,
-});
-
-const schema = z.object({
-  username: z
-    .string()
-    .trim()
-    .min(3, "Username must be at least 3 characters")
-    .max(30)
-    .regex(/^[a-zA-Z0-9_]+$/, "Letters, numbers, underscore only"),
-  email: z.string().trim().email("Invalid email").max(255),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .max(72, "Password must be at most 72 characters")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-    .regex(/[0-9]/, "Password must contain at least one number")
-    .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character"),
 });
 
 function SignupPage() {
@@ -38,7 +20,7 @@ function SignupPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (form.password !== form.confirm) return toast.error("Passwords don't match");
-    const parsed = schema.safeParse(form);
+    const parsed = signupSchema.safeParse(form);
     if (!parsed.success) {
       parsed.error.issues.forEach((iss) => toast.error(iss.message));
       return;
