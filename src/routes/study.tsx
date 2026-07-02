@@ -361,6 +361,7 @@ function QuizPlayer({
   const [eliminated, setEliminated] = useState<Set<string>>(new Set());
   const [usingHint, setUsingHint] = useState(false);
   const [hintMessage, setHintMessage] = useState<string | null>(null);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
 
   useEffect(() => {
     supabase
