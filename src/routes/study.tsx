@@ -361,6 +361,7 @@ function QuizPlayer({
   const [eliminated, setEliminated] = useState<Set<string>>(new Set());
   const [usingHint, setUsingHint] = useState(false);
   const [hintMessage, setHintMessage] = useState<string | null>(null);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
 
   useEffect(() => {
     supabase
@@ -431,16 +432,25 @@ function QuizPlayer({
   const confirm = () => {
     if (!picked || confirmed) return;
     setConfirmed(true);
-    if (picked === qs[idx].correct_answer) setScore((s) => s + 1);
+    const q = qs[idx];
+    setAnswers((a) => ({ ...a, [q.id]: picked }));
+    if (picked === q.correct_answer) setScore((s) => s + 1);
   };
 
   const next = async () => {
     if (idx + 1 >= qs.length) {
       setDone(true);
-      const perfect = score === qs.length;
-      await supabase
-        .from("quiz_attempts")
-        .insert({ quiz_id: quizId, user_id: userId, score, total: qs.length });
+      const finalAnswers = { ...answers };
+      const cur = qs[idx];
+      if (picked && !(cur.id in finalAnswers)) finalAnswers[cur.id] = picked;
+      const { data, error } = await supabase.functions.invoke("submit-quiz", {
+        body: { quizId, answers: finalAnswers },
+      });
+      if (error || data?.error) {
+        toast.error(data?.error || "Couldn't save your attempt");
+        return;
+      }
+      const perfect = data.perfect;
       await awardXp(50, "quiz");
       if (perfect) await awardXp(20, "quiz_perfect");
     } else {
