@@ -194,7 +194,7 @@ function MyFriendsTab() {
     <div>
       <div className="buck-card p-4 flex gap-2">
         <Input
-          placeholder="Search by username or email..."
+          placeholder="Search by username..."
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && search()}
