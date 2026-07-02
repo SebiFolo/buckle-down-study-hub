@@ -17,3 +17,12 @@ verify_jwt = true
 
 [functions.shop-buy]
 verify_jwt = true
+
+[functions.generate-hint]
+verify_jwt = true
+
+[functions.generate-quests]
+verify_jwt = true
+
+[functions.friends-action]
+verify_jwt = true

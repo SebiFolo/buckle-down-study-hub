@@ -1,10 +1,12 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
+import { checkAiRateLimit } from "../_shared/rateLimit.ts";
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const SYSTEM = `You are an AI that generates short actionable study "quests" for a user. Return a JSON object with two arrays: "daily" and "weekly". Each quest must have: "title" (short), "description" (one sentence), and "xp" (integer). Generate 3 daily quests and 4 weekly quests. Make XP values reasonable (daily: 5-30, weekly: 40-150). Output ONLY valid JSON.`;
 
@@ -18,6 +20,17 @@ serve(async (req) => {
     });
     const { data: u } = await supa.auth.getUser();
     if (!u?.user) return jsonResponse(req, { error: "Unauthorized" }, 401);
+
+    const allowed = await checkAiRateLimit(
+      SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY,
+      u.user.id,
+      "generate-quests",
+      3600,
+      5,
+    );
+    if (!allowed)
+      return jsonResponse(req, { error: "Too many AI requests. Try again in a bit." }, 429);
 
     const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

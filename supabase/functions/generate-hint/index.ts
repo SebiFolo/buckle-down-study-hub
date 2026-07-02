@@ -1,10 +1,12 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
+import { checkAiRateLimit } from "../_shared/rateLimit.ts";
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const SYSTEM = `You are a quiz tutor giving a single helpful hint for a multiple-choice question.
 
@@ -25,6 +27,17 @@ serve(async (req) => {
     });
     const { data: u } = await supa.auth.getUser();
     if (!u?.user) return jsonResponse(req, { error: "Unauthorized" }, 401);
+
+    const allowed = await checkAiRateLimit(
+      SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY,
+      u.user.id,
+      "generate-hint",
+      3600,
+      40,
+    );
+    if (!allowed)
+      return jsonResponse(req, { error: "Too many AI requests. Try again in a bit." }, 429);
 
     const body = await req.json().catch(() => ({}));
     const question = typeof body.question === "string" ? body.question.slice(0, 1000) : "";
