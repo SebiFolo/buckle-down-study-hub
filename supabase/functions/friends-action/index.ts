@@ -81,28 +81,22 @@ serve(async (req) => {
       if (!identifier || !IDENTIFIER_RE.test(identifier))
         return jsonResponse(req, { error: "Invalid identifier" }, 400);
 
-      let { data: prof } = await admin
+      // Username-only lookup to prevent email enumeration of registered accounts.
+      if (identifier.includes("@"))
+        return jsonResponse(
+          req,
+          { error: "Search by username only" },
+          400,
+        );
+
+      const { data: prof } = await admin
         .from("profiles")
         .select("id, username, avatar_url, avatar_key, level, xp, streak_count")
         .ilike("username", identifier)
         .maybeSingle();
 
-      if (!prof && identifier.includes("@")) {
-        const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-        const match = list?.users?.find(
-          (x: { email?: string }) => x.email?.toLowerCase() === identifier.toLowerCase(),
-        );
-        if (match) {
-          const { data: p2 } = await admin
-            .from("profiles")
-            .select("id, username, avatar_url, avatar_key, level, xp, streak_count")
-            .eq("id", match.id)
-            .maybeSingle();
-          prof = p2;
-        }
-      }
-
       if (!prof) return jsonResponse(req, { error: "User not found" }, 404);
+
       if (prof.id === userId) return jsonResponse(req, { error: "You cannot add yourself" }, 400);
 
       const { data: existing } = await admin
